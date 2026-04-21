@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Search, MapPin, Briefcase, ChevronRight, CheckCircle2 } from "lucide-react";
 import { jobs } from "@/data/jobs";
 import JobCard from "@/components/jobs/JobCard";
+import HomeSearch from "@/components/home/HomeSearch";
 
 export default function Home() {
   return (
@@ -26,28 +27,7 @@ export default function Home() {
             </p>
             
             {/* Search Bar */}
-            <div className="bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row gap-2 max-w-2xl mt-4">
-              <div className="flex items-center px-3 flex-1">
-                <Search className="w-5 h-5 text-gray-400 mr-2" />
-                <input 
-                  type="text" 
-                  placeholder="Job title, keywords, or company" 
-                  className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-gray-400"
-                />
-              </div>
-              <div className="hidden sm:block w-px bg-gray-200 dark:bg-gray-800 my-2"></div>
-              <div className="flex items-center px-3 flex-1 border-t sm:border-t-0 border-gray-200 dark:border-gray-800 pt-2 sm:pt-0">
-                <MapPin className="w-5 h-5 text-gray-400 mr-2" />
-                <input 
-                  type="text" 
-                  placeholder="City, state, or remote" 
-                  className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-gray-400"
-                />
-              </div>
-              <button className="bg-primary hover:bg-primary-hover text-white font-medium px-6 py-3 rounded-lg transition-colors whitespace-nowrap">
-                Search Jobs
-              </button>
-            </div>
+            <HomeSearch />
             
             <div className="flex items-center gap-4 mt-2 text-sm text-foreground/60">
               <span>Popular:</span>

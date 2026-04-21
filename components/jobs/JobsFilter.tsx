@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { Search, MapPin } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, MapPin, Briefcase } from "lucide-react";
+import CustomSelect, { SelectOption } from "@/components/ui/CustomSelect";
+import { jobs } from "@/data/jobs";
 
 export default function JobsFilter() {
   const router = useRouter();
@@ -11,6 +13,35 @@ export default function JobsFilter() {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [location, setLocation] = useState(searchParams.get("location") || "");
   const [type, setType] = useState(searchParams.get("type") || "");
+
+  const locationOptions = useMemo(() => {
+    const uniqueLocs = Array.from(new Set(jobs.map(j => j.location)));
+    const opts: SelectOption[] = [];
+    
+    // Check if Remote exists in any variation
+    const hasRemote = uniqueLocs.some(l => l.toLowerCase().includes("remote"));
+    if (hasRemote) {
+      opts.push({ label: "Remote", value: "Remote", highlight: true });
+    }
+
+    uniqueLocs.forEach(loc => {
+      if (!loc.toLowerCase().includes("remote")) {
+        opts.push({ label: loc, value: loc });
+      }
+    });
+
+    return opts.sort((a, b) => {
+      if (a.highlight) return -1;
+      if (b.highlight) return 1;
+      return a.label.localeCompare(b.label);
+    });
+  }, []);
+
+  const typeOptions: SelectOption[] = [
+    { label: "Full-time", value: "Full-time" },
+    { label: "Contract", value: "Contract" },
+    { label: "Part-time", value: "Part-time" },
+  ];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,49 +56,51 @@ export default function JobsFilter() {
     if (type) params.set("type", type);
     else params.delete("type");
     
-    // reset to page 1 on new search
     params.delete("page");
-    
     router.push(`/jobs?${params.toString()}`);
   };
 
   return (
-    <form onSubmit={handleSearch} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col md:flex-row gap-4 mb-8">
-      <div className="flex items-center flex-1 px-2">
-        <Search className="w-5 h-5 text-gray-400 mr-2" />
+    <form onSubmit={handleSearch} className="bg-white dark:bg-gray-900 p-2 md:p-3 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col md:flex-row gap-2 mb-8">
+      <div className="flex items-center flex-1 px-3 py-2">
+        <Search className="w-5 h-5 text-gray-400 mr-2 shrink-0" />
         <input 
           type="text" 
           placeholder="Job title, skills, or company" 
-          className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-gray-400"
+          className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-gray-400 text-sm"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
+      
       <div className="hidden md:block w-px bg-gray-200 dark:bg-gray-800 my-2"></div>
-      <div className="flex items-center flex-1 px-2 border-t md:border-t-0 border-gray-200 dark:border-gray-800 pt-3 md:pt-0">
-        <MapPin className="w-5 h-5 text-gray-400 mr-2" />
-        <input 
-          type="text" 
-          placeholder="City, state, or remote" 
-          className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-gray-400"
+      
+      <div className="flex-1 px-3 border-t md:border-t-0 border-gray-200 dark:border-gray-800">
+        <CustomSelect 
+          options={locationOptions}
           value={location}
-          onChange={(e) => setLocation(e.target.value)}
+          onChange={setLocation}
+          placeholder="Location"
+          searchable={true}
+          icon={<MapPin className="w-5 h-5" />}
+          className="text-sm h-full"
         />
       </div>
+      
       <div className="hidden md:block w-px bg-gray-200 dark:bg-gray-800 my-2"></div>
-      <div className="flex items-center flex-1 px-2 border-t md:border-t-0 border-gray-200 dark:border-gray-800 pt-3 md:pt-0">
-        <select 
-          className="w-full bg-transparent border-none outline-none text-foreground cursor-pointer"
+      
+      <div className="flex-1 px-3 border-t md:border-t-0 border-gray-200 dark:border-gray-800">
+        <CustomSelect 
+          options={typeOptions}
           value={type}
-          onChange={(e) => setType(e.target.value)}
-        >
-          <option value="" className="bg-background text-foreground">Any Job Type</option>
-          <option value="Full-time" className="bg-background text-foreground">Full-time</option>
-          <option value="Contract" className="bg-background text-foreground">Contract</option>
-          <option value="Part-time" className="bg-background text-foreground">Part-time</option>
-        </select>
+          onChange={setType}
+          placeholder="Job Type"
+          icon={<Briefcase className="w-5 h-5" />}
+          className="text-sm h-full"
+        />
       </div>
-      <button type="submit" className="bg-primary hover:bg-primary-hover text-white font-medium px-6 py-2 rounded-lg transition-colors mt-2 md:mt-0 whitespace-nowrap">
+      
+      <button type="submit" className="bg-primary hover:bg-primary-hover text-white font-medium px-8 py-3 rounded-lg transition-colors mt-2 md:mt-0 whitespace-nowrap shadow-sm">
         Search
       </button>
     </form>
