@@ -1,4 +1,4 @@
-import { jobs } from "@/data/jobs";
+import { getJobs } from "@/lib/jobs";
 import JobCard from "@/components/jobs/JobCard";
 import JobsFilter from "@/components/jobs/JobsFilter";
 import JobsPagination from "@/components/jobs/JobsPagination";
@@ -15,28 +15,17 @@ export default async function JobsPage({
 }) {
   const resolvedParams = await searchParams;
   
-  const query = typeof resolvedParams.q === "string" ? resolvedParams.q.toLowerCase() : "";
-  const location = typeof resolvedParams.location === "string" ? resolvedParams.location.toLowerCase() : "";
+  const query = typeof resolvedParams.q === "string" ? resolvedParams.q : "";
+  const location = typeof resolvedParams.location === "string" ? resolvedParams.location : "";
   const type = typeof resolvedParams.type === "string" ? resolvedParams.type : "";
   const page = typeof resolvedParams.page === "string" ? parseInt(resolvedParams.page) : 1;
-  
-  const ITEMS_PER_PAGE = 9;
 
-  // Filter jobs
-  const filteredJobs = jobs.filter((job) => {
-    const matchesQuery = query === "" || 
-      job.title.toLowerCase().includes(query) || 
-      job.company.toLowerCase().includes(query) ||
-      job.tags.some(tag => tag.toLowerCase().includes(query));
-      
-    const matchesLocation = location === "" || job.location.toLowerCase().includes(location);
-    const matchesType = type === "" || job.type === type;
-    
-    return matchesQuery && matchesLocation && matchesType;
+  const { jobs: currentJobs, totalPages, totalJobs } = await getJobs({
+    query,
+    location,
+    type,
+    page,
   });
-
-  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
-  const currentJobs = filteredJobs.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
     <div className="container mx-auto px-4 py-12 flex-1">
@@ -49,7 +38,7 @@ export default async function JobsPage({
 
       <JobsFilter />
 
-      {filteredJobs.length === 0 ? (
+      {currentJobs.length === 0 ? (
         <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
           <h2 className="text-xl font-semibold mb-2">No jobs found</h2>
           <p className="text-foreground/70">Try adjusting your search criteria or removing filters.</p>
@@ -57,7 +46,7 @@ export default async function JobsPage({
       ) : (
         <>
           <div className="mb-6 text-sm font-medium text-foreground/70">
-            Showing {currentJobs.length} of {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''}
+            Showing {currentJobs.length} of {totalJobs} job{totalJobs !== 1 ? 's' : ''}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

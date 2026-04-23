@@ -1,4 +1,4 @@
-import { jobs } from "@/data/jobs";
+import { getJobById } from "@/lib/jobs";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,7 +17,7 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const id = extractIdFromSlug(slug);
-  const job = jobs.find((j) => j.id === id);
+  const job = await getJobById(id);
 
   if (!job) {
     return { title: "Job Not Found | Devforge" };
@@ -36,7 +36,7 @@ export default async function JobDetailsPage({
 }) {
   const { slug } = await params;
   const id = extractIdFromSlug(slug);
-  const job = jobs.find((j) => j.id === id);
+  const job = await getJobById(id);
 
   if (!job) {
     notFound();
