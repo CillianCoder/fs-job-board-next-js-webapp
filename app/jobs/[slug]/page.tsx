@@ -9,6 +9,7 @@ import {
   Building2,
 } from "lucide-react";
 import { extractIdFromSlug } from "@/utils/slugify";
+import ApplyModal from "@/components/jobs/ApplyModal";
 
 export async function generateMetadata({
   params,
@@ -87,9 +88,11 @@ export default async function JobDetailsPage({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 shrink-0 mt-4 md:mt-0">
-              <button className="px-8 py-3 rounded-lg bg-primary text-white font-medium hover:bg-primary-hover transition-colors shadow-sm">
-                Apply Now
-              </button>
+              <ApplyModal
+                jobId={job.id}
+                jobTitle={job.title}
+                company={job.company}
+              />
               <button className="px-8 py-3 rounded-lg bg-white dark:bg-gray-800 text-foreground border border-gray-200 dark:border-gray-700 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 Save Job
               </button>
