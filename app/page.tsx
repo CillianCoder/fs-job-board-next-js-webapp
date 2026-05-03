@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Search, MapPin, Briefcase, ChevronRight, CheckCircle2 } from "lucide-react";
-import { jobs } from "@/data/jobs";
+import { getJobs, getUniqueLocations } from "@/lib/jobs";
 import JobCard from "@/components/jobs/JobCard";
 import HomeSearch from "@/components/home/HomeSearch";
 
-export default function Home() {
+export default async function Home() {
+  const { jobs } = await getJobs({ limit: 6 });
+  const locations = await getUniqueLocations();
   return (
     <div className="flex flex-col w-full">
       {/* Hero Section */}
@@ -27,7 +29,7 @@ export default function Home() {
             </p>
             
             {/* Search Bar */}
-            <HomeSearch />
+            <HomeSearch locations={locations} />
             
             <div className="flex items-center gap-4 mt-2 text-sm text-foreground/60">
               <span>Popular:</span>
@@ -71,7 +73,7 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {jobs.slice(0, 6).map((job) => (
+            {jobs.map((job) => (
               <JobCard key={job.id} job={job} />
             ))}
           </div>

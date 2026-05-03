@@ -4,9 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo } from "react";
 import { Search, MapPin, Briefcase } from "lucide-react";
 import CustomSelect, { SelectOption } from "@/components/ui/CustomSelect";
-import { jobs } from "@/data/jobs";
-
-export default function JobsFilter() {
+export default function JobsFilter({ locations = [] }: { locations?: string[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -15,7 +13,7 @@ export default function JobsFilter() {
   const [type, setType] = useState(searchParams.get("type") || "");
 
   const locationOptions = useMemo(() => {
-    const uniqueLocs = Array.from(new Set(jobs.map(j => j.location)));
+    const uniqueLocs = Array.from(new Set(locations));
     const opts: SelectOption[] = [];
     
     // Check if Remote exists in any variation

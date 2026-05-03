@@ -3,16 +3,15 @@
 import { useState, useMemo } from "react";
 import { Search, MapPin } from "lucide-react";
 import CustomSelect, { SelectOption } from "@/components/ui/CustomSelect";
-import { jobs } from "@/data/jobs";
 import { useRouter } from "next/navigation";
 
-export default function HomeSearch() {
+export default function HomeSearch({ locations = [] }: { locations?: string[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
 
   const locationOptions = useMemo(() => {
-    const uniqueLocs = Array.from(new Set(jobs.map(j => j.location)));
+    const uniqueLocs = Array.from(new Set(locations));
     const opts: SelectOption[] = [];
     
     const hasRemote = uniqueLocs.some(l => l.toLowerCase().includes("remote"));

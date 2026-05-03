@@ -1,6 +1,6 @@
-import { Job } from "@/data/jobs";
+import { Job } from "@prisma/client";
 
-export function generateJobSlug(job: Job): string {
+export function generateJobSlug(job: Pick<Job, "title" | "company" | "id">): string {
   const base = `${job.title} ${job.company}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')

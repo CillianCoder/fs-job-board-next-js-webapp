@@ -1,4 +1,5 @@
-import { jobs, Job } from "@/data/jobs";
+import prisma from "@/lib/prisma";
+import { Job, Prisma } from "@prisma/client";
 
 export interface GetJobsParams {
   query?: string;
@@ -19,16 +20,27 @@ export interface GetJobsResult {
  * Returns all jobs without filtering.
  */
 export async function getAllJobs(): Promise<Job[]> {
-  // Simulating an async DB/API call
-  return jobs;
+  return prisma.job.findMany({
+    orderBy: { postedAt: "desc" }
+  });
 }
 
 /**
  * Returns a specific job by ID.
  */
 export async function getJobById(id: string): Promise<Job | null> {
-  const job = jobs.find((j) => j.id === id);
-  return job || null;
+  return prisma.job.findUnique({
+    where: { id }
+  });
+}
+
+/**
+ * Returns a specific job by slug.
+ */
+export async function getJobBySlug(slug: string): Promise<Job | null> {
+  return prisma.job.findUnique({
+    where: { slug }
+  });
 }
 
 /**
@@ -43,31 +55,49 @@ export async function getJobs(params: GetJobsParams = {}): Promise<GetJobsResult
     limit = 9
   } = params;
 
-  // Filter jobs
-  const filteredJobs = jobs.filter((job) => {
-    const matchesQuery = query === "" || 
-      job.title.toLowerCase().includes(query.toLowerCase()) || 
-      job.company.toLowerCase().includes(query.toLowerCase()) ||
-      job.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()));
-      
-    const matchesLocation = location === "" || job.location.toLowerCase().includes(location.toLowerCase());
-    const matchesType = type === "" || job.type === type;
-    
-    return matchesQuery && matchesLocation && matchesType;
+  const where: Prisma.JobWhereInput = {};
+
+  if (query) {
+    where.OR = [
+      { title: { contains: query, mode: "insensitive" } },
+      { company: { contains: query, mode: "insensitive" } }
+    ];
+  }
+
+  if (location) {
+    where.location = { contains: location, mode: "insensitive" };
+  }
+
+  if (type) {
+    where.type = type;
+  }
+
+  const totalJobs = await prisma.job.count({ where });
+  const totalPages = Math.ceil(totalJobs / limit);
+  const validPage = Math.max(1, Math.min(page, totalPages > 0 ? totalPages : 1));
+
+  const jobs = await prisma.job.findMany({
+    where,
+    orderBy: { postedAt: "desc" },
+    skip: (validPage - 1) * limit,
+    take: limit
   });
 
-  const totalJobs = filteredJobs.length;
-  const totalPages = Math.ceil(totalJobs / limit);
-  
-  // Ensure page is within bounds
-  const validPage = Math.max(1, Math.min(page, totalPages > 0 ? totalPages : 1));
-  
-  const currentJobs = filteredJobs.slice((validPage - 1) * limit, validPage * limit);
-
   return {
-    jobs: currentJobs,
+    jobs,
     totalPages,
     totalJobs,
     currentPage: validPage
   };
+}
+
+/**
+ * Returns an array of unique locations for dropdown filters.
+ */
+export async function getUniqueLocations(): Promise<string[]> {
+  const distinctLocations = await prisma.job.findMany({
+    select: { location: true },
+    distinct: ['location']
+  });
+  return distinctLocations.map(j => j.location);
 }

@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Job {
+  id           String        @id @default(cuid())
+  title        String
+  company      String
+  location     String
+  salary       String
+  type         String
+  tags         String[]
+  slug         String        @unique
+  postedAt     DateTime      @default(now())
+  
+  employerId   String?
+  employer     Employer?     @relation(fields: [employerId], references: [id])
+  
+  categoryId   String?
+  category     Category?     @relation(fields: [categoryId], references: [id])
+
+  applications Application[]
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  role      String    @default("CANDIDATE")
+  password  String?   // Optional for OAuth
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  employer  Employer?
+}
+
+model Employer {
+  id          String   @id @default(cuid())
+  name        String
+  logoUrl     String?
+  website     String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  jobs        Job[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  
+  jobs        Job[]
+}
+
+model Application {
+  id          String   @id @default(cuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id])
+  name        String
+  email       String
+  phone       String?
+  resumeUrl   String
+  linkedin    String?
+  github      String?
+  experience  String?
+  coverLetter String?
+  appliedAt   DateTime @default(now())
+}

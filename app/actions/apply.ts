@@ -1,5 +1,10 @@
 "use server";
 
+import prisma from "@/lib/prisma";
+import { promises as fs } from "fs";
+import path from "path";
+import crypto from "crypto";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -152,17 +157,46 @@ export async function applyToJob(
   // Replace this block with your real DB insert / email service call.
   // -------------------------------------------------------------------------
   try {
-    // Simulate async processing delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    if (!resumeFile) {
+      throw new Error("Resume file is required");
+    }
 
-    // In production you would do something like:
-    // await db.applications.create({ jobId, name, email, ... });
-    // await sendConfirmationEmail({ to: email, jobId });
+    // Prepare file upload
+    const bytes = await resumeFile.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "resumes");
+    await fs.mkdir(uploadDir, { recursive: true });
+    
+    const uniqueSuffix = crypto.randomBytes(8).toString('hex');
+    const ext = path.extname(resumeFile.name) || ".pdf";
+    const fileName = `${Date.now()}-${uniqueSuffix}${ext}`;
+    const filePath = path.join(uploadDir, fileName);
+    
+    // Save file locally
+    await fs.writeFile(filePath, buffer);
+    const resumeUrl = `/uploads/resumes/${fileName}`;
 
-    console.info(`[applyToJob] Application received — jobId: ${jobId}, applicant: ${email}`);
+    // Save to database
+    await prisma.application.create({
+      data: {
+        jobId,
+        name,
+        email,
+        phone: phone || null,
+        linkedin: linkedin || null,
+        github: github || null,
+        experience,
+        coverLetter: coverLetter || null,
+        resumeUrl
+      }
+    });
+
+    console.info(`[applyToJob] Application saved to DB — jobId: ${jobId}, applicant: ${email}`);
 
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error("Error saving application:", error);
     return {
       success: false,
       globalError:

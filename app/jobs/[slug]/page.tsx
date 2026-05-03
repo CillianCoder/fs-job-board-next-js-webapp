@@ -1,4 +1,4 @@
-import { getJobById } from "@/lib/jobs";
+import { getJobBySlug } from "@/lib/jobs";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,7 +8,6 @@ import {
   Calendar,
   Building2,
 } from "lucide-react";
-import { extractIdFromSlug } from "@/utils/slugify";
 import ApplyModal from "@/components/jobs/ApplyModal";
 
 export async function generateMetadata({
@@ -17,8 +16,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const id = extractIdFromSlug(slug);
-  const job = await getJobById(id);
+  const job = await getJobBySlug(slug);
 
   if (!job) {
     return { title: "Job Not Found | Devforge" };
@@ -36,8 +34,7 @@ export default async function JobDetailsPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const id = extractIdFromSlug(slug);
-  const job = await getJobById(id);
+  const job = await getJobBySlug(slug);
 
   if (!job) {
     notFound();

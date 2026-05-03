@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { MapPin, Briefcase } from "lucide-react";
-import { Job } from "@/data/jobs";
+import { Job } from "@prisma/client";
 import { generateJobSlug } from "@/utils/slugify";
 
 export default function JobCard({ job }: { job: Job }) {
   return (
-    <Link href={`/jobs/${generateJobSlug(job)}`} className="block h-full group">
+    <Link href={`/jobs/${job.slug}`} className="block h-full group">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full cursor-pointer">
         <div className="flex justify-between items-start mb-4">
           <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-bold text-xl text-gray-500">

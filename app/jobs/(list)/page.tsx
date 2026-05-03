@@ -1,4 +1,4 @@
-import { getJobs } from "@/lib/jobs";
+import { getJobs, getUniqueLocations } from "@/lib/jobs";
 import JobCard from "@/components/jobs/JobCard";
 import JobsFilter from "@/components/jobs/JobsFilter";
 import JobsPagination from "@/components/jobs/JobsPagination";
@@ -26,6 +26,7 @@ export default async function JobsPage({
     type,
     page,
   });
+  const locations = await getUniqueLocations();
 
   return (
     <div className="container mx-auto px-4 py-12 flex-1">
@@ -36,7 +37,7 @@ export default async function JobsPage({
         </p>
       </div>
 
-      <JobsFilter />
+      <JobsFilter locations={locations} />
 
       {currentJobs.length === 0 ? (
         <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
