@@ -64,15 +64,6 @@ export default function RecruiterDashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Welcome back, John!</h1>
           <p className="text-foreground/60 mt-1">Here is what's happening with your job listings today.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/recruiter-dashboard/manage-jobs/new"
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm shadow-primary/20"
-          >
-            <Plus className="w-5 h-5" />
-            Post New Job
-          </Link>
-        </div>
       </div>
 
       {/* Metrics Grid */}

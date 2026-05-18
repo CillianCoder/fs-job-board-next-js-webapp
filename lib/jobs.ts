@@ -10,7 +10,11 @@ export interface GetJobsParams {
 }
 
 export interface GetJobsResult {
-  jobs: Job[];
+  jobs: (Job & {
+    _count?: {
+      applications: number;
+    };
+  })[];
   totalPages: number;
   totalJobs: number;
   currentPage: number;
@@ -80,7 +84,14 @@ export async function getJobs(params: GetJobsParams = {}): Promise<GetJobsResult
     where,
     orderBy: { postedAt: "desc" },
     skip: (validPage - 1) * limit,
-    take: limit
+    take: limit,
+    include: {
+      _count: {
+        select: {
+          applications: true
+        }
+      }
+    }
   });
 
   return {

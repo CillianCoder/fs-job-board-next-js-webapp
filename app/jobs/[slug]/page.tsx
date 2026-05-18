@@ -105,57 +105,65 @@ export default async function JobDetailsPage({
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-8 shadow-sm">
               <h2 className="text-xl font-bold mb-4">About the Role</h2>
               <div className="prose dark:prose-invert max-w-none text-foreground/80 space-y-4">
-                <p>
-                  We are looking for a passionate and experienced{" "}
-                  <strong>{job.title}</strong> to join our team at {job.company}
-                  . In this role, you will be responsible for building scalable,
-                  high-performance applications that serve millions of users.
-                </p>
-                <p>
-                  You will work closely with product managers, designers, and
-                  other engineers to deliver impactful features. The ideal
-                  candidate has a strong foundation in software engineering,
-                  excellent problem-solving skills, and a track record of
-                  delivering quality software.
-                </p>
+                {job.description ? (
+                  <div className="whitespace-pre-line leading-relaxed text-sm sm:text-base">
+                    {job.description}
+                  </div>
+                ) : (
+                  <>
+                    <p>
+                      We are looking for a passionate and experienced{" "}
+                      <strong>{job.title}</strong> to join our team at {job.company}
+                      . In this role, you will be responsible for building scalable,
+                      high-performance applications that serve millions of users.
+                    </p>
+                    <p>
+                      You will work closely with product managers, designers, and
+                      other engineers to deliver impactful features. The ideal
+                      candidate has a strong foundation in software engineering,
+                      excellent problem-solving skills, and a track record of
+                      delivering quality software.
+                    </p>
 
-                <h3 className="text-lg font-semibold mt-6 mb-2 text-foreground">
-                  Responsibilities
-                </h3>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>
-                    Design, develop, and maintain robust software solutions.
-                  </li>
-                  <li>
-                    Collaborate with cross-functional teams to define, design,
-                    and ship new features.
-                  </li>
-                  <li>Identify and correct bottlenecks and fix bugs.</li>
-                  <li>
-                    Help maintain code quality, organization, and
-                    automatization.
-                  </li>
-                  <li>
-                    Mentoring junior developers and conducting code reviews.
-                  </li>
-                </ul>
+                    <h3 className="text-lg font-semibold mt-6 mb-2 text-foreground">
+                      Responsibilities
+                    </h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>
+                        Design, develop, and maintain robust software solutions.
+                      </li>
+                      <li>
+                        Collaborate with cross-functional teams to define, design,
+                        and ship new features.
+                      </li>
+                      <li>Identify and correct bottlenecks and fix bugs.</li>
+                      <li>
+                        Help maintain code quality, organization, and
+                        automatization.
+                      </li>
+                      <li>
+                        Mentoring junior developers and conducting code reviews.
+                      </li>
+                    </ul>
 
-                <h3 className="text-lg font-semibold mt-6 mb-2 text-foreground">
-                  Requirements
-                </h3>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>
-                    Proven experience working as a {job.title} or similar role.
-                  </li>
-                  <li>
-                    Deep knowledge of best practices in software architecture
-                    and design.
-                  </li>
-                  <li>
-                    Experience working in an agile development environment.
-                  </li>
-                  <li>Excellent communication and teamwork skills.</li>
-                </ul>
+                    <h3 className="text-lg font-semibold mt-6 mb-2 text-foreground">
+                      Requirements
+                    </h3>
+                    <ul className="list-disc pl-5 space-y-2">
+                      <li>
+                        Proven experience working as a {job.title} or similar role.
+                      </li>
+                      <li>
+                        Deep knowledge of best practices in software architecture
+                        and design.
+                      </li>
+                      <li>
+                        Experience working in an agile development environment.
+                      </li>
+                      <li>Excellent communication and teamwork skills.</li>
+                    </ul>
+                  </>
+                )}
               </div>
             </div>
           </div>

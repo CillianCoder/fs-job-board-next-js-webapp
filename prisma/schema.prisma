@@ -16,6 +16,7 @@ model Job {
   tags         String[]
   slug         String        @unique
   postedAt     DateTime      @default(now())
+  description  String?       @default("")
   
   employerId   String?
   employer     Employer?     @relation(fields: [employerId], references: [id])
