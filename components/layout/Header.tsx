@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 export default function Header() {
   return (
@@ -18,6 +19,7 @@ export default function Header() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Link href="/login" className="hidden md:block text-sm font-medium text-foreground/80 hover:text-primary transition-colors">
             Sign In
           </Link>

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -8,14 +11,13 @@
   --primary-light: #fee2e2;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --primary: #ef4444;
-    --primary-hover: #dc2626;
-    --primary-light: #450a0a;
-  }
+/* Class-based dark mode — applied by ThemeProvider */
+html.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #ef4444;
+  --primary-hover: #dc2626;
+  --primary-light: #450a0a;
 }
 
 @theme inline {
@@ -33,3 +35,4 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
