@@ -1,12 +1,17 @@
+"use client";
+
 import Link from "next/link";
 import { User, Settings, LogOut, Briefcase, FileText, LayoutDashboard } from "lucide-react";
 import React from "react";
+import { usePathname } from "next/navigation";
 
 export default function RecruiterDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900/50">
       {/* Dashboard Sub-Header */}
@@ -15,21 +20,33 @@ export default function RecruiterDashboardLayout({
           <nav className="flex items-center gap-6 overflow-x-auto">
             <Link
               href="/recruiter-dashboard"
-              className="flex items-center gap-2 text-sm font-medium text-primary border-b-2 border-primary h-14"
+              className={`flex items-center gap-2 text-sm font-medium h-14 border-b-2 transition-all ${
+                pathname === "/recruiter-dashboard"
+                  ? "text-primary border-primary"
+                  : "text-foreground/60 border-transparent hover:text-foreground hover:border-foreground/30"
+              }`}
             >
               <LayoutDashboard className="w-4 h-4" />
               Overview
             </Link>
             <Link
               href="/recruiter-dashboard/manage-jobs"
-              className="flex items-center gap-2 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors h-14"
+              className={`flex items-center gap-2 text-sm font-medium h-14 border-b-2 transition-all ${
+                pathname === "/recruiter-dashboard/manage-jobs"
+                  ? "text-primary border-primary"
+                  : "text-foreground/60 border-transparent hover:text-foreground hover:border-foreground/30"
+              }`}
             >
               <Briefcase className="w-4 h-4" />
               Manage Jobs
             </Link>
             <Link
               href="/recruiter-dashboard/manage-applications"
-              className="flex items-center gap-2 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors h-14"
+              className={`flex items-center gap-2 text-sm font-medium h-14 border-b-2 transition-all ${
+                pathname === "/recruiter-dashboard/manage-applications"
+                  ? "text-primary border-primary"
+                  : "text-foreground/60 border-transparent hover:text-foreground hover:border-foreground/30"
+              }`}
             >
               <FileText className="w-4 h-4" />
               Applications
