@@ -37,6 +37,7 @@ model User {
   updatedAt DateTime  @updatedAt
   
   employer  Employer?
+  candidate CandidateProfile?
 }
 
 model Employer {
@@ -76,4 +77,19 @@ model Application {
   experience  String?
   coverLetter String?
   appliedAt   DateTime @default(now())
+}
+
+model CandidateProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  phone       String?
+  resumeUrl   String?
+  linkedin    String?
+  github      String?
+  experience  String?
+  coverLetter String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

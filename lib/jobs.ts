@@ -7,6 +7,7 @@ export interface GetJobsParams {
   type?: string;
   page?: number;
   limit?: number;
+  employerId?: string;
 }
 
 export interface GetJobsResult {
@@ -56,10 +57,15 @@ export async function getJobs(params: GetJobsParams = {}): Promise<GetJobsResult
     location = "",
     type = "",
     page = 1,
-    limit = 9
+    limit = 9,
+    employerId = ""
   } = params;
 
   const where: Prisma.JobWhereInput = {};
+
+  if (employerId) {
+    where.employerId = employerId;
+  }
 
   if (query) {
     where.OR = [

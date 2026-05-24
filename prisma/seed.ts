@@ -3,6 +3,7 @@ import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { jobs } from '../data/jobs'
 import { generateJobSlug } from '../utils/slugify'
+import bcrypt from 'bcryptjs'
 
 async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL })
@@ -11,7 +12,26 @@ async function main() {
 
   console.log('Starting relational seeding...')
 
-  // 1. Create Categories
+  // Hash standard password for seed accounts
+  const defaultPasswordHash = await bcrypt.hash('password123', 10)
+
+  // 1a. Create Admin User
+  const adminPasswordHash = await bcrypt.hash('123Devforge', 10)
+  await prisma.user.upsert({
+    where: { email: 'info@devforge.com' },
+    update: {
+      password: adminPasswordHash,
+    },
+    create: {
+      email: 'info@devforge.com',
+      name: 'System Admin',
+      role: 'ADMIN',
+      password: adminPasswordHash,
+    }
+  })
+  console.log('Created system admin account (info@devforge.com).')
+
+  // 1b. Create Categories
   const categoryNames = [
     "Engineering",
     "Mobile",
@@ -46,11 +66,14 @@ async function main() {
     // Create User (Employer role)
     const user = await prisma.user.upsert({
       where: { email },
-      update: {},
+      update: {
+        password: defaultPasswordHash,
+      },
       create: {
         email,
         name: `${company} HR`,
-        role: "EMPLOYER"
+        role: "EMPLOYER",
+        password: defaultPasswordHash,
       }
     })
 
@@ -68,6 +91,40 @@ async function main() {
     employerMap.set(company, employer.id)
   }
   console.log(`Created ${employerMap.size} employers and users.`)
+
+  // 2b. Create Candidates
+  const candidatesData = [
+    { email: 'candidate1@devforge.com', name: 'Alice Smith', phone: '123-456-7890', github: 'github.com/alice', linkedin: 'linkedin.com/in/alice', experience: '3 years of React development', coverLetter: 'I love building UI!' },
+    { email: 'candidate2@devforge.com', name: 'Bob Jones', phone: '098-765-4321', github: 'github.com/bob', linkedin: 'linkedin.com/in/bob', experience: '5 years of Python backend development', coverLetter: 'I am a backend specialist.' }
+  ]
+  for (const cand of candidatesData) {
+    const user = await prisma.user.upsert({
+      where: { email: cand.email },
+      update: {
+        password: defaultPasswordHash,
+      },
+      create: {
+        email: cand.email,
+        name: cand.name,
+        role: 'CANDIDATE',
+        password: defaultPasswordHash,
+      }
+    })
+    await prisma.candidateProfile.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        name: cand.name,
+        phone: cand.phone,
+        github: cand.github,
+        linkedin: cand.linkedin,
+        experience: cand.experience,
+        coverLetter: cand.coverLetter
+      }
+    })
+  }
+  console.log(`Created ${candidatesData.length} candidates.`)
 
   // 3. Create Jobs
   let count = 0;
