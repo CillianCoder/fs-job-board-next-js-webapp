@@ -1,9 +1,9 @@
 import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { 
-  Users, Briefcase, FileText, Calendar, 
-  Shield, UserCheck, ShieldAlert 
+import {
+  Users, Briefcase, FileText,
+  Shield, ShieldAlert
 } from "lucide-react";
 
 export const metadata = {
@@ -50,7 +50,7 @@ export default async function AdminDashboardPage() {
       <div className="container mx-auto max-w-6xl">
         {/* Welcome Header */}
         <div className="mb-8">
-          <div className="inline-flex items-center rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-650 dark:text-red-400 mb-3 gap-1.5">
+          <div className="inline-flex items-center rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-700 dark:text-red-300 mb-3 gap-1.5">
             <Shield className="w-3.5 h-3.5" />
             System Administrator Access
           </div>
@@ -60,7 +60,7 @@ export default async function AdminDashboardPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400">
                 <Users className="w-5 h-5" />
@@ -71,9 +71,9 @@ export default async function AdminDashboardPage() {
             <p className="text-sm font-semibold text-foreground/50">Registered Users</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-500/10 rounded-lg text-purple-650 dark:text-purple-400">
+              <div className="p-3 bg-purple-500/10 rounded-lg text-purple-700 dark:text-purple-400">
                 <Briefcase className="w-5 h-5" />
               </div>
               <span className="text-xs font-semibold text-foreground/40">Active</span>
@@ -82,7 +82,7 @@ export default async function AdminDashboardPage() {
             <p className="text-sm font-semibold text-foreground/50">Jobs Posted</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
                 <FileText className="w-5 h-5" />
@@ -93,7 +93,7 @@ export default async function AdminDashboardPage() {
             <p className="text-sm font-semibold text-foreground/50">Applications Sent</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-400">
                 <ShieldAlert className="w-5 h-5" />
@@ -110,14 +110,14 @@ export default async function AdminDashboardPage() {
 
         {/* User Directory Table */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-150 dark:border-gray-800 flex items-center justify-between">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <h2 className="text-xl font-bold text-foreground">User Directory</h2>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-850 bg-gray-50 dark:bg-gray-950 text-xs font-bold text-foreground/60 uppercase tracking-wider">
+                <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-xs font-bold text-foreground/60 uppercase tracking-wider">
                   <th className="px-6 py-4">Name</th>
                   <th className="px-6 py-4">Email</th>
                   <th className="px-6 py-4">Role</th>
@@ -132,10 +132,10 @@ export default async function AdminDashboardPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                         user.role === "ADMIN" 
-                          ? "bg-red-50 dark:bg-red-950/20 text-red-650 border-red-100 dark:border-red-900/30" 
+                          ? "bg-red-50 text-red-700 border-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/60"
                           : user.role === "EMPLOYER"
-                          ? "bg-purple-50 dark:bg-purple-950/20 text-purple-650 border-purple-100 dark:border-purple-900/30"
-                          : "bg-blue-50 dark:bg-blue-950/20 text-blue-650 border-blue-100 dark:border-blue-900/30"
+                          ? "bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60"
+                          : "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60"
                       }`}>
                         {user.role === "ADMIN" ? "Admin" : user.role === "EMPLOYER" ? "Recruiter" : "Candidate"}
                       </span>

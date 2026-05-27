@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { User, Settings, LogOut, Briefcase, FileText } from "lucide-react";
+import { Settings, LogOut } from "lucide-react";
 import React from "react";
 import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -53,7 +53,7 @@ export default async function RecruiterDashboardLayout({
               </div>
 
               {/* Dropdown Menu (Hover) */}
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="absolute right-0 top-full w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50">
                 <div className="py-1">
                   <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 md:hidden">
                     <p className="text-sm font-bold text-foreground">{recruiterName}</p>
@@ -69,7 +69,7 @@ export default async function RecruiterDashboardLayout({
                   <form action={logoutAction}>
                     <button
                       type="submit"
-                      className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-650 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium cursor-pointer"
+                      className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-medium cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       Logout

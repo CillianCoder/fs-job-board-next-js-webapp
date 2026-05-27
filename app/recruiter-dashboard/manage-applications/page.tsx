@@ -67,11 +67,11 @@ export default async function ManageApplicationsPage() {
               className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
             >
               {/* Application Header */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-850">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
                 <div>
                   <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                     {app.name}
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/30 text-blue-650 border border-blue-100 dark:border-blue-900/30">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60">
                       New
                     </span>
                   </h3>
@@ -90,7 +90,7 @@ export default async function ManageApplicationsPage() {
               {/* Application Details */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                 {/* Contact info & Links */}
-                <div className="space-y-3 border-r border-transparent md:border-gray-100 md:dark:border-gray-850 pr-4">
+                <div className="space-y-3 border-r border-transparent md:border-gray-100 md:dark:border-gray-800 pr-4">
                   <h4 className="text-xs font-bold text-foreground/40 uppercase tracking-wider">Candidate Info</h4>
                   
                   <div className="flex items-center gap-2 text-sm text-foreground/80 font-medium">

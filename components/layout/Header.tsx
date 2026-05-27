@@ -2,7 +2,7 @@ import Link from "next/link";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { getSession } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
-import { User, LogOut, LayoutDashboard, Shield, LogIn } from "lucide-react";
+import { LogOut, LayoutDashboard, Shield, LogIn } from "lucide-react";
 
 export default async function Header() {
   const session = await getSession();
@@ -24,6 +24,13 @@ export default async function Header() {
       dashboardLabel = "Dashboard";
     }
   }
+
+  const roleBadgeClass =
+    session?.role === "ADMIN"
+      ? "bg-red-50 text-red-700 border-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/60"
+      : session?.role === "EMPLOYER"
+        ? "bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60"
+        : "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-background/85 backdrop-blur">
@@ -54,13 +61,13 @@ export default async function Header() {
           
           {session ? (
             <div className="flex items-center gap-4">
-              <span className="hidden md:inline text-xs font-bold text-foreground/60 bg-gray-100 dark:bg-gray-850 px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-800">
+              <span className={`hidden md:inline text-xs font-bold px-2.5 py-1 rounded-full border ${roleBadgeClass}`}>
                 {session.role === "ADMIN" ? "Admin" : session.role === "EMPLOYER" ? "Recruiter" : "Candidate"}
               </span>
               <form action={logoutAction} className="inline">
                 <button 
                   type="submit" 
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-850 text-sm font-bold text-foreground hover:bg-red-50 dark:hover:bg-red-950/15 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/35 transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-bold text-foreground hover:bg-red-50 dark:hover:bg-red-950/15 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/35 transition-all cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out

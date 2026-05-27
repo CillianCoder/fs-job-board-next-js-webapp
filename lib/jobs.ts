@@ -111,8 +111,9 @@ export async function getJobs(params: GetJobsParams = {}): Promise<GetJobsResult
 /**
  * Returns an array of unique locations for dropdown filters.
  */
-export async function getUniqueLocations(): Promise<string[]> {
+export async function getUniqueLocations(employerId?: string): Promise<string[]> {
   const distinctLocations = await prisma.job.findMany({
+    where: employerId ? { employerId } : undefined,
     select: { location: true },
     distinct: ['location']
   });

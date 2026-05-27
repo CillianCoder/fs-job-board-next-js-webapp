@@ -59,7 +59,7 @@ export default async function CandidateDashboardPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-primary/10 rounded-lg text-primary">
                 <FileText className="w-5 h-5" />
@@ -69,7 +69,7 @@ export default async function CandidateDashboardPage() {
             <p className="text-sm font-semibold text-foreground/50">Total Applications</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
                 <Briefcase className="w-5 h-5" />
@@ -81,9 +81,9 @@ export default async function CandidateDashboardPage() {
             <p className="text-sm font-semibold text-foreground/50">Job Seeking Status</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 p-6 rounded-xl shadow-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-500/10 rounded-lg text-purple-650 dark:text-purple-400">
+              <div className="p-3 bg-purple-500/10 rounded-lg text-purple-700 dark:text-purple-400">
                 <Calendar className="w-5 h-5" />
               </div>
             </div>
@@ -99,7 +99,7 @@ export default async function CandidateDashboardPage() {
           {/* Applications list (2 cols) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-150 dark:border-gray-800">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
                 <h2 className="text-xl font-bold text-foreground">Your Applications</h2>
               </div>
 
@@ -142,7 +142,7 @@ export default async function CandidateDashboardPage() {
                       </div>
 
                       <div className="flex sm:flex-col items-start sm:items-end gap-2 text-left sm:text-right shrink-0">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60">
                           Submitted
                         </span>
                         <p className="text-xs text-foreground/45 mt-1">

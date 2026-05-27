@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { generateJobSlug } from "@/utils/slugify";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth";
+import { normalizeSalaryRange } from "@/lib/salary";
 
 export type JobFieldErrors = {
   title?: string;
@@ -21,8 +23,6 @@ export type CreateJobState = {
   errors?: JobFieldErrors;
   globalError?: string;
 };
-
-const SALARY_RE = /^\$\d+k\s*-\s*\$\d+k$/i; // e.g. $100k - $150k
 
 function validateFields(data: {
   title: string;
@@ -61,8 +61,8 @@ function validateFields(data: {
   // Salary
   if (!salary.trim()) {
     errors.salary = "Salary range is required.";
-  } else if (!SALARY_RE.test(salary.trim())) {
-    errors.salary = "Please enter salary in the format '$120k - $150k'.";
+  } else if (!normalizeSalaryRange(salary)) {
+    errors.salary = "Enter a valid range, like '$120k - $150k' or '120 - 150'.";
   }
 
   // Job Type
@@ -93,10 +93,25 @@ export async function createJob(
   _prevState: CreateJobState,
   formData: FormData
 ): Promise<CreateJobState> {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
+    return { success: false, globalError: "You must be logged in as a recruiter to post a job." };
+  }
+
+  const recruiter = await prisma.user.findUnique({
+    where: { id: session.userId },
+    include: { employer: true },
+  });
+
+  if (!recruiter?.employer) {
+    return { success: false, globalError: "Complete your recruiter profile before posting a job." };
+  }
+
   const title = (formData.get("title") as string) ?? "";
-  const company = (formData.get("company") as string) ?? "";
+  const company = recruiter.employer.name;
   const location = (formData.get("location") as string) ?? "";
-  const salary = (formData.get("salary") as string) ?? "";
+  const salaryInput = (formData.get("salary") as string) ?? "";
+  const salary = normalizeSalaryRange(salaryInput) ?? salaryInput;
   const type = (formData.get("type") as string) ?? "";
   const tagsString = (formData.get("tags") as string) ?? "";
   const categoryId = (formData.get("categoryId") as string) ?? "";
@@ -125,33 +140,7 @@ export async function createJob(
       .map((tag) => tag.trim())
       .filter((tag) => tag.length > 0);
 
-    // Resilient Employer Setup (find or create)
-    const companySlug = company.toLowerCase().replace(/[^a-z0-9]+/g, "");
-    const hrEmail = `hr@${companySlug || "generic"}.com`;
-
-    // 1. Upsert dummy user for the employer
-    const user = await prisma.user.upsert({
-      where: { email: hrEmail },
-      update: {},
-      create: {
-        email: hrEmail,
-        name: `${company} HR`,
-        role: "EMPLOYER",
-      },
-    });
-
-    // 2. Upsert employer linked to user
-    const employer = await prisma.employer.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        name: company,
-        userId: user.id,
-        description: `Profile for ${company}`,
-      },
-    });
-
-    // 3. Resilient Category Mapping (resolving fallback names or missing IDs dynamically)
+    // Resilient Category Mapping (resolving fallback names or missing IDs dynamically)
     let finalCategoryId = categoryId;
     
     // Check if categoryId is a valid category ID in DB
@@ -174,11 +163,11 @@ export async function createJob(
       finalCategoryId = cat.id;
     }
 
-    // 4. Pre-generate job ID to calculate unique slug
+    // Pre-generate job ID to calculate unique slug
     const shortId = crypto.randomBytes(4).toString("hex"); // e.g. '8a2f4c91'
     const slug = generateJobSlug({ title, company, id: shortId });
 
-    // 5. Create Job in database
+    // Create Job in database and attach it to the logged-in recruiter profile.
     await prisma.job.create({
       data: {
         id: shortId,
@@ -189,7 +178,7 @@ export async function createJob(
         type,
         tags,
         slug,
-        employerId: employer.id,
+        employerId: recruiter.employer.id,
         categoryId: finalCategoryId,
         description: description.trim() || null,
       },
@@ -197,6 +186,7 @@ export async function createJob(
 
     // Revalidate paths to clear search caches
     revalidatePath("/jobs");
+    revalidatePath("/recruiter-dashboard");
     revalidatePath("/recruiter-dashboard/manage-jobs");
 
     return { success: true };

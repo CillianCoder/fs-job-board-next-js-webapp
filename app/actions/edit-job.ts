@@ -4,14 +4,14 @@ import prisma from "@/lib/prisma";
 import { generateJobSlug } from "@/utils/slugify";
 import { revalidatePath } from "next/cache";
 import { JobFieldErrors } from "./create-job";
+import { getSession } from "@/lib/auth";
+import { normalizeSalaryRange } from "@/lib/salary";
 
 export type EditJobState = {
   success: boolean;
   errors?: JobFieldErrors;
   globalError?: string;
 };
-
-const SALARY_RE = /^\$\d+k\s*-\s*\$\d+k$/i; // e.g. $100k - $150k
 
 function validateFields(data: {
   title: string;
@@ -50,8 +50,8 @@ function validateFields(data: {
   // Salary
   if (!salary.trim()) {
     errors.salary = "Salary range is required.";
-  } else if (!SALARY_RE.test(salary.trim())) {
-    errors.salary = "Please enter salary in the format '$120k - $150k'.";
+  } else if (!normalizeSalaryRange(salary)) {
+    errors.salary = "Enter a valid range, like '$120k - $150k' or '120 - 150'.";
   }
 
   // Job Type
@@ -82,11 +82,26 @@ export async function editJob(
   _prevState: EditJobState,
   formData: FormData
 ): Promise<EditJobState> {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
+    return { success: false, globalError: "You must be logged in as a recruiter to edit a job." };
+  }
+
+  const recruiter = await prisma.user.findUnique({
+    where: { id: session.userId },
+    include: { employer: true },
+  });
+
+  if (!recruiter?.employer) {
+    return { success: false, globalError: "Complete your recruiter profile before editing jobs." };
+  }
+
   const id = (formData.get("id") as string) ?? "";
   const title = (formData.get("title") as string) ?? "";
-  const company = (formData.get("company") as string) ?? "";
+  const company = recruiter.employer.name;
   const location = (formData.get("location") as string) ?? "";
-  const salary = (formData.get("salary") as string) ?? "";
+  const salaryInput = (formData.get("salary") as string) ?? "";
+  const salary = normalizeSalaryRange(salaryInput) ?? salaryInput;
   const type = (formData.get("type") as string) ?? "";
   const tagsString = (formData.get("tags") as string) ?? "";
   const categoryId = (formData.get("categoryId") as string) ?? "";
@@ -94,6 +109,17 @@ export async function editJob(
 
   if (!id) {
     return { success: false, globalError: "Missing job ID." };
+  }
+
+  const existingJob = await prisma.job.findFirst({
+    where: {
+      id,
+      employerId: recruiter.employer.id,
+    },
+  });
+
+  if (!existingJob) {
+    return { success: false, globalError: "This job does not belong to your recruiter profile." };
   }
 
   // Validate inputs
@@ -144,7 +170,7 @@ export async function editJob(
 
     // Update Job in database
     await prisma.job.update({
-      where: { id },
+      where: { id: existingJob.id },
       data: {
         title: title.trim(),
         company: company.trim(),
@@ -160,7 +186,9 @@ export async function editJob(
 
     // Revalidate paths to clear search caches
     revalidatePath("/jobs");
+    revalidatePath(`/jobs/${existingJob.slug}`);
     revalidatePath(`/jobs/${slug}`);
+    revalidatePath("/recruiter-dashboard");
     revalidatePath("/recruiter-dashboard/manage-jobs");
 
     return { success: true };

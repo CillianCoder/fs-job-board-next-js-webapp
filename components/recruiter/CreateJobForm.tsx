@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState, useEffect, startTransition } from "react";
-import { useRouter } from "next/navigation";
 import { createJob } from "@/app/actions/create-job";
 import { editJob } from "@/app/actions/edit-job";
 import { Category, Job } from "@prisma/client";
@@ -23,6 +22,7 @@ import Link from "next/link";
 interface CreateJobFormProps {
   categories: Category[];
   job?: Job; // Optional job prop for Edit mode
+  companyName?: string;
 }
 
 const FALLBACK_CATEGORIES = [
@@ -35,9 +35,24 @@ const FALLBACK_CATEGORIES = [
   { id: "Security", name: "Security" }
 ];
 
-export default function CreateJobForm({ categories, job }: CreateJobFormProps) {
-  const router = useRouter();
+function parseSalaryRange(salary?: string | null) {
+  const numbers = salary?.match(/\d+(?:,\d{3})*/g);
+  const rawMin = numbers?.[0] ? Number(numbers[0].replace(/,/g, "")) : 80;
+  const rawMax = numbers?.[1] ? Number(numbers[1].replace(/,/g, "")) : 130;
+  const min = rawMin >= 1000 ? Math.round(rawMin / 1000) : rawMin;
+  const max = rawMax >= 1000 ? Math.round(rawMax / 1000) : rawMax;
+  const clampedMin = Math.max(0, Math.min(min, 295));
+  const clampedMax = Math.max(clampedMin + 5, Math.min(max, 300));
+
+  return {
+    min: clampedMin,
+    max: clampedMax,
+  };
+}
+
+export default function CreateJobForm({ categories, job, companyName }: CreateJobFormProps) {
   const isEditMode = !!job;
+  const initialSalary = parseSalaryRange(job?.salary);
 
   // React 19 Action State Hook - branches depending on Create vs Edit mode
   const [state, formAction, isPending] = useActionState(
@@ -48,6 +63,9 @@ export default function CreateJobForm({ categories, job }: CreateJobFormProps) {
   // Client-side dynamic states for tag rendering (pre-populated in Edit mode)
   const [tagInput, setTagInput] = useState(job ? job.tags.join(", ") : "");
   const [renderedTags, setRenderedTags] = useState<string[]>([]);
+  const [salaryMin, setSalaryMin] = useState(initialSalary.min);
+  const [salaryMax, setSalaryMax] = useState(initialSalary.max);
+  const [salaryText, setSalaryText] = useState(job?.salary ?? `$${initialSalary.min}k - $${initialSalary.max}k`);
   
   // Decide active categories (fallback if DB hasn't been seeded)
   const activeCategories = categories.length > 0 ? categories : FALLBACK_CATEGORIES;
@@ -67,6 +85,25 @@ export default function CreateJobForm({ categories, job }: CreateJobFormProps) {
     startTransition(() => {
       formAction(formData);
     });
+  };
+
+  const updateSalaryMin = (value: number) => {
+    const nextMin = Math.max(0, Math.min(value, salaryMax - 5));
+    setSalaryMin(nextMin);
+    setSalaryText(`$${nextMin}k - $${salaryMax}k`);
+  };
+
+  const updateSalaryMax = (value: number) => {
+    const nextMax = Math.min(300, Math.max(value, salaryMin + 5));
+    setSalaryMax(nextMax);
+    setSalaryText(`$${salaryMin}k - $${nextMax}k`);
+  };
+
+  const handleSalaryTextBlur = () => {
+    const parsed = parseSalaryRange(salaryText);
+    setSalaryMin(parsed.min);
+    setSalaryMax(parsed.max);
+    setSalaryText(`$${parsed.min}k - $${parsed.max}k`);
   };
 
   // If success, display the premium celebration screen
@@ -185,7 +222,8 @@ export default function CreateJobForm({ categories, job }: CreateJobFormProps) {
                     type="text"
                     name="company"
                     placeholder="e.g. TechCorp Inc."
-                    defaultValue={job?.company ?? ""}
+                    defaultValue={job?.company ?? companyName ?? ""}
+                    readOnly={!!companyName}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm ${
                       state.errors?.company
                         ? "border-red-500 focus:ring-red-500/10 focus:border-red-500"
@@ -256,19 +294,83 @@ export default function CreateJobForm({ categories, job }: CreateJobFormProps) {
               {/* Salary Range */}
               <div>
                 <label className="block text-sm font-semibold text-foreground/85 mb-2">Salary Range</label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-foreground/40" />
-                  <input
-                    type="text"
-                    name="salary"
-                    placeholder="e.g. $120k - $150k"
-                    defaultValue={job?.salary ?? ""}
-                    className={`w-full pl-10 pr-4 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm ${
-                      state.errors?.salary
-                        ? "border-red-500 focus:ring-red-500/10 focus:border-red-500"
-                        : "border-gray-200 dark:border-gray-800"
-                    }`}
-                  />
+                <div
+                  className={`rounded-xl border bg-gray-50 dark:bg-gray-950 p-4 ${
+                    state.errors?.salary ? "border-red-500" : "border-gray-200 dark:border-gray-800"
+                  }`}
+                >
+                  <label className="block text-xs font-bold text-foreground/50 mb-2">
+                    Type or adjust
+                  </label>
+                  <div className="relative mb-4">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-foreground/40" />
+                    <input
+                      type="text"
+                      name="salary"
+                      value={salaryText}
+                      onChange={(e) => setSalaryText(e.target.value)}
+                      onBlur={handleSalaryTextBlur}
+                      placeholder="$120k - $150k"
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 pl-10 pr-4 py-2.5 text-sm font-semibold text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="text-xs font-semibold text-foreground/50">
+                      Use annual salary in USD.
+                    </div>
+                    <span className="text-xs font-bold text-primary">${salaryMin}k - ${salaryMax}k</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <label className="text-xs font-bold text-foreground/50">
+                      Minimum
+                      <input
+                        type="number"
+                        min={0}
+                        max={salaryMax - 5}
+                        step={5}
+                        value={salaryMin}
+                        onChange={(e) => updateSalaryMin(Number(e.target.value))}
+                        className="mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="text-xs font-bold text-foreground/50">
+                      Maximum
+                      <input
+                        type="number"
+                        min={salaryMin + 5}
+                        max={300}
+                        step={5}
+                        value={salaryMax}
+                        onChange={(e) => updateSalaryMax(Number(e.target.value))}
+                        className="mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="space-y-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={295}
+                      step={5}
+                      value={salaryMin}
+                      onChange={(e) => updateSalaryMin(Number(e.target.value))}
+                      aria-label="Minimum salary"
+                      className="w-full accent-primary"
+                    />
+                    <input
+                      type="range"
+                      min={5}
+                      max={300}
+                      step={5}
+                      value={salaryMax}
+                      onChange={(e) => updateSalaryMax(Number(e.target.value))}
+                      aria-label="Maximum salary"
+                      className="w-full accent-primary"
+                    />
+                  </div>
                 </div>
                 {state.errors?.salary && (
                   <p className="mt-1.5 text-xs font-medium text-red-500 flex items-center gap-1">

@@ -55,7 +55,7 @@ export default async function ManageJobsPage({ searchParams }: PageProps) {
   });
 
   // Get unique locations to populate our filter dropdown dynamically
-  const uniqueLocations = await getUniqueLocations();
+  const uniqueLocations = await getUniqueLocations(user.employer.id);
 
   return (
     <ManageJobsClient
