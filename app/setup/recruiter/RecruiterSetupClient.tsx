@@ -1,10 +1,15 @@
 "use client";
 
 import { useActionState, startTransition, useState } from "react";
-import { setupRecruiterAction, ActionState } from "@/app/actions/auth";
-import { 
-  Building2, Globe, Image as ImageIcon, FileText, 
-  Loader2, ArrowRight, CheckCircle2 
+import Link from "next/link";
+import { setupRecruiterAction } from "@/app/actions/auth";
+import {
+  ArrowLeft,
+  Building2,
+  Globe,
+  Image as ImageIcon,
+  Loader2,
+  Save,
 } from "lucide-react";
 
 interface SetupProps {
@@ -12,6 +17,7 @@ interface SetupProps {
   initialWebsite: string;
   initialLogoUrl: string;
   initialDescription: string;
+  isEditing: boolean;
 }
 
 export default function RecruiterSetupClient({
@@ -19,6 +25,7 @@ export default function RecruiterSetupClient({
   initialWebsite,
   initialLogoUrl,
   initialDescription,
+  isEditing,
 }: SetupProps) {
   const [state, action, isPending] = useActionState(setupRecruiterAction, { success: false });
 
@@ -42,21 +49,35 @@ export default function RecruiterSetupClient({
   };
 
   return (
-    <div className="flex-1 bg-gray-50 dark:bg-gray-950/50 py-16 px-4">
+    <div className="flex-1 bg-gray-50 dark:bg-gray-950/50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
+        {isEditing && (
+          <Link
+            href="/recruiter-dashboard"
+            className="inline-flex items-center text-sm font-semibold text-foreground/60 hover:text-primary transition-colors mb-6 group"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Dashboard
+          </Link>
+        )}
+
+        <div className="mb-8">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">
             <Building2 className="w-6 h-6" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Recruiter Profile Setup</h1>
-          <p className="text-sm text-foreground/60 mt-2">
-            Complete your company profiles. This information will appear on the jobs you post on Devforge.
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            {isEditing ? "Company Settings" : "Recruiter Profile Setup"}
+          </h1>
+          <p className="text-sm text-foreground/60 mt-2 max-w-xl">
+            {isEditing
+              ? "Edit the company details candidates see on your job listings and recruiter dashboard."
+              : "Complete your company profile. This information will appear on the jobs you post on Devforge."}
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-8 relative z-10">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm p-6 sm:p-8 relative z-10">
           {state.error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/30 rounded-xl text-sm text-red-650 dark:text-red-400">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/30 rounded-xl text-sm text-red-700 dark:text-red-300">
               {state.error}
             </div>
           )}
@@ -85,7 +106,7 @@ export default function RecruiterSetupClient({
                 />
               </div>
               {state.fieldErrors?.companyName && (
-                <p className="mt-2 text-xs font-semibold text-red-650 dark:text-red-400">{state.fieldErrors.companyName}</p>
+                <p className="mt-2 text-xs font-semibold text-red-700 dark:text-red-300">{state.fieldErrors.companyName}</p>
               )}
             </div>
 
@@ -111,7 +132,7 @@ export default function RecruiterSetupClient({
                 />
               </div>
               {state.fieldErrors?.website && (
-                <p className="mt-2 text-xs font-semibold text-red-650 dark:text-red-400">{state.fieldErrors.website}</p>
+                <p className="mt-2 text-xs font-semibold text-red-700 dark:text-red-300">{state.fieldErrors.website}</p>
               )}
             </div>
 
@@ -158,24 +179,33 @@ export default function RecruiterSetupClient({
               />
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full py-4 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-75 disabled:pointer-events-none"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Saving Details...
-                </>
-              ) : (
-                <>
-                  Complete Registration
-                  <ArrowRight className="w-4 h-4" />
-                </>
+            <div className="flex flex-col sm:flex-row gap-3 items-center justify-end pt-2">
+              {isEditing && (
+                <Link
+                  href="/recruiter-dashboard"
+                  className="w-full sm:w-auto text-center px-5 py-3 text-sm font-semibold text-foreground/75 hover:text-foreground border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Cancel
+                </Link>
               )}
-            </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-md shadow-primary/20 flex items-center justify-center gap-2 transition-all disabled:opacity-75 disabled:pointer-events-none"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Saving Details...
+                  </>
+                ) : (
+                  <>
+                    {isEditing ? "Save Company Profile" : "Complete Registration"}
+                    <Save className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </form>
         </div>
       </div>

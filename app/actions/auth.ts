@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { comparePassword, hashPassword, setSessionCookie, clearSessionCookie, getSession } from "@/lib/auth";
 import { sendResetPasswordEmail } from "@/lib/email";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { SignJWT, jwtVerify } from "jose";
 import { promises as fs } from "fs";
 import path from "path";
@@ -418,7 +419,7 @@ export async function setupRecruiterAction(prevState: ActionState, formData: For
 
   try {
     // Upsert Recruiter Profile (Employer)
-    await prisma.employer.upsert({
+    const employer = await prisma.employer.upsert({
       where: { userId: session.userId },
       update: {
         name: companyName.trim(),
@@ -435,17 +436,26 @@ export async function setupRecruiterAction(prevState: ActionState, formData: For
       }
     });
 
-    // Update User Name
-    await prisma.user.update({
-      where: { id: session.userId },
-      data: { name: `${companyName.trim()} HR` }
-    });
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: session.userId },
+        data: { name: `${companyName.trim()} HR` }
+      }),
+      prisma.job.updateMany({
+        where: { employerId: employer.id },
+        data: { company: companyName.trim() }
+      })
+    ]);
 
     // Update session cookie
     await setSessionCookie({
       ...session,
       setupComplete: true
     });
+
+    revalidatePath("/jobs");
+    revalidatePath("/recruiter-dashboard");
+    revalidatePath("/recruiter-dashboard/manage-jobs");
 
     redirect("/recruiter-dashboard");
   } catch (err: any) {

@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import RecruiterSetupClient from "./RecruiterSetupClient";
 
 export const metadata = {
-  title: "Recruiter Profile Setup | Devforge",
-  description: "Complete your employer details to post and manage job opportunities.",
+  title: "Company Settings | Devforge",
+  description: "Edit your recruiter company profile and public employer details.",
 };
 
 export default async function RecruiterSetupPage() {
@@ -29,6 +29,7 @@ export default async function RecruiterSetupPage() {
       initialWebsite={user.employer?.website || ""}
       initialLogoUrl={user.employer?.logoUrl || ""}
       initialDescription={user.employer?.description || ""}
+      isEditing={Boolean(user.employer)}
     />
   );
 }

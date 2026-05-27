@@ -93,6 +93,14 @@ export async function proxy(request: NextRequest) {
 
   // Logged-in completed users should not be allowed to go to setup pages
   if (isSetupRoute) {
+    if (role === 'EMPLOYER' && pathname === '/setup/recruiter') {
+      return NextResponse.next();
+    }
+
+    if (role === 'CANDIDATE' && pathname === '/setup/candidate') {
+      return NextResponse.next();
+    }
+
     const dashboardPath = 
       role === 'ADMIN' ? '/admin-dashboard' : 
       role === 'EMPLOYER' ? '/recruiter-dashboard' : '/candidate-dashboard';

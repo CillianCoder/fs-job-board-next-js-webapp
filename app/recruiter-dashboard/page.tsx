@@ -242,13 +242,6 @@ export default async function RecruiterDashboardPage() {
                 </div>
               )}
 
-              <Link
-                href="/setup/recruiter"
-                className="relative z-10 inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-bold text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-              >
-                Customize Company Details
-                <ChevronRight className="w-4 h-4" />
-              </Link>
             </div>
           </div>
 
