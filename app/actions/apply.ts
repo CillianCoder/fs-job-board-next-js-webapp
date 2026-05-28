@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
+import { getSession } from "@/lib/auth";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,9 +53,10 @@ function validateFields(data: {
   experience: string;
   resumeFile: File | null;
   coverLetter: string;
+  hasExistingResume: boolean;
 }): FieldErrors {
   const errors: FieldErrors = {};
-  const { name, email, phone, linkedin, github, experience, resumeFile, coverLetter } =
+  const { name, email, phone, linkedin, github, experience, resumeFile, coverLetter, hasExistingResume } =
     data;
 
   // Full Name
@@ -100,13 +102,15 @@ function validateFields(data: {
     errors.experience = "Please select your years of experience.";
   }
 
-  // Resume
-  if (!resumeFile || resumeFile.size === 0) {
-    errors.resume = "Please upload your resume or CV.";
-  } else if (!ALLOWED_MIME.includes(resumeFile.type)) {
-    errors.resume = "Only PDF, DOC, or DOCX files are accepted.";
-  } else if (resumeFile.size > MAX_FILE_BYTES) {
-    errors.resume = "File size must be 5 MB or less.";
+  // Resume validation (only if there is no existing resume from candidate profile)
+  if (!hasExistingResume) {
+    if (!resumeFile || resumeFile.size === 0) {
+      errors.resume = "Please upload your resume or CV.";
+    } else if (!ALLOWED_MIME.includes(resumeFile.type)) {
+      errors.resume = "Only PDF, DOC, or DOCX files are accepted.";
+    } else if (resumeFile.size > MAX_FILE_BYTES) {
+      errors.resume = "File size must be 5 MB or less.";
+    }
   }
 
   // Cover Letter (optional, max length)
@@ -125,6 +129,14 @@ export async function applyToJob(
   _prevState: ApplyState,
   formData: FormData
 ): Promise<ApplyState> {
+  const session = await getSession();
+  if (!session || session.role !== "CANDIDATE") {
+    return {
+      success: false,
+      globalError: "You must be logged in as a Candidate to apply for jobs.",
+    };
+  }
+
   // Extract raw values
   const name = (formData.get("name") as string) ?? "";
   const email = (formData.get("email") as string) ?? "";
@@ -133,8 +145,11 @@ export async function applyToJob(
   const github = (formData.get("github") as string) ?? "";
   const experience = (formData.get("experience") as string) ?? "";
   const resumeFile = formData.get("resume") as File | null;
+  const existingResumeUrl = (formData.get("existingResumeUrl") as string) ?? "";
   const coverLetter = (formData.get("coverLetter") as string) ?? "";
   const jobId = (formData.get("jobId") as string) ?? "";
+
+  const hasExistingResume = !!existingResumeUrl;
 
   // Server-side validation
   const errors = validateFields({
@@ -146,36 +161,40 @@ export async function applyToJob(
     experience,
     resumeFile,
     coverLetter,
+    hasExistingResume,
   });
 
   if (Object.keys(errors).length > 0) {
     return { success: false, errors };
   }
 
-  // -------------------------------------------------------------------------
-  // Stub: persist application & send confirmation email.
-  // Replace this block with your real DB insert / email service call.
-  // -------------------------------------------------------------------------
   try {
-    if (!resumeFile) {
-      throw new Error("Resume file is required");
+    let resumeUrl = existingResumeUrl;
+
+    // Handle resume upload if a new file is provided
+    if (resumeFile && resumeFile.size > 0) {
+      const bytes = await resumeFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "resumes");
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      const uniqueSuffix = crypto.randomBytes(8).toString('hex');
+      const ext = path.extname(resumeFile.name) || ".pdf";
+      const fileName = `${Date.now()}-${uniqueSuffix}${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      // Save file locally
+      await fs.writeFile(filePath, buffer);
+      resumeUrl = `/uploads/resumes/${fileName}`;
     }
 
-    // Prepare file upload
-    const bytes = await resumeFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "resumes");
-    await fs.mkdir(uploadDir, { recursive: true });
-    
-    const uniqueSuffix = crypto.randomBytes(8).toString('hex');
-    const ext = path.extname(resumeFile.name) || ".pdf";
-    const fileName = `${Date.now()}-${uniqueSuffix}${ext}`;
-    const filePath = path.join(uploadDir, fileName);
-    
-    // Save file locally
-    await fs.writeFile(filePath, buffer);
-    const resumeUrl = `/uploads/resumes/${fileName}`;
+    if (!resumeUrl) {
+      return {
+        success: false,
+        globalError: "A resume/CV is required to apply.",
+      };
+    }
 
     // Save to database
     await prisma.application.create({

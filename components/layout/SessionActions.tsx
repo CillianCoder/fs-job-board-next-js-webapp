@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { LogOut, LogIn } from "lucide-react";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
@@ -16,9 +15,6 @@ export default function SessionActions({
   session,
   roleBadgeClass,
 }: SessionActionsProps) {
-  const pathname = usePathname();
-  const isRecruiterDashboard = pathname.startsWith("/recruiter-dashboard");
-
   if (session) {
     return (
       <div className="flex items-center gap-4">
@@ -30,16 +26,14 @@ export default function SessionActions({
               ? "Recruiter"
               : "Candidate"}
         </span>
-        {!isRecruiterDashboard && (
-          <form action={logoutAction} className="inline">
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-bold text-foreground hover:bg-red-50 dark:hover:bg-red-950/15 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/35 transition-all cursor-pointer">
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-          </form>
-        )}
+        <form action={logoutAction} className="inline">
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-bold text-foreground hover:bg-red-50 dark:hover:bg-red-950/15 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900/35 transition-all cursor-pointer">
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+        </form>
       </div>
     );
   }

@@ -9,6 +9,8 @@ import {
   Building2,
 } from "lucide-react";
 import ApplyModal from "@/components/jobs/ApplyModal";
+import { getSession } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function generateMetadata({
   params,
@@ -46,6 +48,21 @@ export default async function JobDetailsPage({
     month: "long",
     day: "numeric",
   });
+
+  const session = await getSession();
+  let candidateProfile = null;
+  let userRole = session?.role || null;
+  let isLoggedIn = !!session;
+
+  if (session && session.role === "CANDIDATE") {
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      include: { candidate: true }
+    });
+    if (user) {
+      candidateProfile = user.candidate;
+    }
+  }
 
   return (
     <div className="bg-gray-50 dark:bg-background min-h-screen pb-20 flex-1">
@@ -89,6 +106,17 @@ export default async function JobDetailsPage({
                 jobId={job.id}
                 jobTitle={job.title}
                 company={job.company}
+                isLoggedIn={isLoggedIn}
+                userRole={userRole}
+                candidateProfile={candidateProfile ? {
+                  name: candidateProfile.name,
+                  email: session?.email || "",
+                  phone: candidateProfile.phone || "",
+                  linkedin: candidateProfile.linkedin || "",
+                  github: candidateProfile.github || "",
+                  experience: candidateProfile.experience || "",
+                  resumeUrl: candidateProfile.resumeUrl || "",
+                } : undefined}
               />
               <button className="px-8 py-3 rounded-lg bg-white dark:bg-gray-800 text-foreground border border-gray-200 dark:border-gray-700 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 Save Job
