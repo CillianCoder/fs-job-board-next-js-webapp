@@ -28,16 +28,17 @@ model Job {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String?
-  role      String    @default("CANDIDATE")
-  password  String?   // Optional for OAuth
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  
-  employer  Employer?
-  candidate CandidateProfile?
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String?
+  role               String    @default("CANDIDATE")
+  password           String?   // Optional for OAuth
+  passwordChangedAt  DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  employer           Employer?
+  candidate          CandidateProfile?
 }
 
 model Employer {

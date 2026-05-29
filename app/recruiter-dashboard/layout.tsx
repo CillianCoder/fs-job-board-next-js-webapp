@@ -60,7 +60,7 @@ export default async function RecruiterDashboardLayout({
                     <p className="text-xs text-foreground/60 font-semibold">{employerName}</p>
                   </div>
                   <Link
-                    href="/setup/recruiter"
+                    href="/recruiter-dashboard/profile"
                     className="flex items-center gap-2 px-4 py-2 text-sm text-foreground/80 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-foreground transition-colors font-medium"
                   >
                     <Settings className="w-4 h-4" />
