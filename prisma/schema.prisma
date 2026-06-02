@@ -66,18 +66,26 @@ model Category {
 }
 
 model Application {
-  id          String   @id @default(cuid())
-  jobId       String
-  job         Job      @relation(fields: [jobId], references: [id])
-  name        String
-  email       String
-  phone       String?
-  resumeUrl   String
-  linkedin    String?
-  github      String?
-  experience  String?
-  coverLetter String?
-  appliedAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  jobId           String
+  job             Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name            String
+  email           String
+  phone           String?
+  resumeUrl       String
+  linkedin        String?
+  github          String?
+  experience      String?
+  coverLetter     String?
+  status          String   @default("NEW")
+  statusChangedAt DateTime @default(now()) @updatedAt
+  notes           String?
+  appliedAt       DateTime @default(now())
+
+  @@index([jobId])
+  @@index([status])
+  @@index([appliedAt])
+  @@index([jobId, status])
 }
 
 model CandidateProfile {

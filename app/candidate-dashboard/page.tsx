@@ -5,8 +5,10 @@ import Link from "next/link";
 import { 
   User, Briefcase, FileText, Calendar, 
   Phone, Link2, Code2, ArrowRight, ExternalLink,
-  TrendingUp, CheckCircle2, Award
+  TrendingUp, Award
 } from "lucide-react";
+import ApplicationStatusBadge from "@/components/applications/ApplicationStatusBadge";
+import { getApplicationStatusMeta } from "@/lib/application-status";
 
 export const metadata = {
   title: "Candidate Dashboard | Devforge",
@@ -41,6 +43,8 @@ export default async function CandidateDashboardPage() {
     }
   });
 
+  const applicationsWithUpdates = applications.filter((app) => app.status !== "NEW").length;
+
   // Dynamic status check or experience options helper
   const getExperienceLabel = (exp: string) => {
     switch (exp) {
@@ -63,10 +67,10 @@ export default async function CandidateDashboardPage() {
       color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 dark:bg-blue-500/20",
     },
     {
-      label: "Seeking Status",
-      value: "Active",
-      change: "Open to new software engineer opportunities",
-      trend: "up",
+      label: "Status Updates",
+      value: applicationsWithUpdates.toString(),
+      change: applicationsWithUpdates > 0 ? "Applications with recruiter updates" : "Waiting for recruiter review",
+      trend: applicationsWithUpdates > 0 ? "up" : "neutral",
       icon: Briefcase,
       color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20",
     },
@@ -148,7 +152,10 @@ export default async function CandidateDashboardPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-150 dark:divide-gray-800">
-                {applications.map((app) => (
+                {applications.map((app) => {
+                  const statusMeta = getApplicationStatusMeta(app.status);
+
+                  return (
                   <div key={app.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                       <Link 
@@ -167,18 +174,23 @@ export default async function CandidateDashboardPage() {
                           {app.job.salary}
                         </span>
                       </div>
+                      <p className="text-xs text-foreground/50 mt-3">{statusMeta.candidateSummary}</p>
                     </div>
 
                     <div className="flex sm:flex-col items-start sm:items-end gap-2 text-left sm:text-right shrink-0">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60">
-                        Submitted
-                      </span>
+                      <ApplicationStatusBadge status={app.status} audience="candidate" />
                       <p className="text-xs text-foreground/45 mt-1">
                         Applied {new Date(app.appliedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                       </p>
+                      {app.statusChangedAt && app.statusChangedAt > app.appliedAt && (
+                        <p className="text-xs text-foreground/45">
+                          Updated {new Date(app.statusChangedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        </p>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
