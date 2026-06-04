@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Mail, Phone, ExternalLink, Download, Loader2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
-import { updateApplicationStatus, updateApplicationNotes } from "@/app/actions/applications";
+import {
+  updateApplicationStatus,
+  updateApplicationNotes,
+} from "@/app/actions/applications";
 
 interface Application {
   id: string;
@@ -40,7 +43,13 @@ const EXPERIENCE_OPTIONS: Record<string, string> = {
   "10+": "10+ years",
 };
 
-const VALID_STATUSES = ["NEW", "REVIEWING", "SHORTLISTED", "APPROVED", "REJECTED"];
+const VALID_STATUSES = [
+  "NEW",
+  "REVIEWING",
+  "SHORTLISTED",
+  "APPROVED",
+  "REJECTED",
+];
 
 export default function ApplicationStatusModal({
   application,
@@ -52,6 +61,15 @@ export default function ApplicationStatusModal({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  useEffect(() => {
+    if (application) {
+      setNotes(application.notes || "");
+      setError("");
+      setSuccess("");
+      setLoading(false);
+    }
+  }, [application]);
+
   if (!application) return null;
 
   const handleStatusChange = async (newStatus: string) => {
@@ -59,7 +77,11 @@ export default function ApplicationStatusModal({
     setError("");
     setSuccess("");
 
-    const result = await updateApplicationStatus(application.id, newStatus, notes);
+    const result = await updateApplicationStatus(
+      application.id,
+      newStatus,
+      notes,
+    );
 
     setLoading(false);
     if (result.success) {
@@ -98,14 +120,17 @@ export default function ApplicationStatusModal({
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-foreground">{application.name}</h2>
-            <p className="text-sm text-foreground/60 mt-1">{application.job.title} at {application.job.company}</p>
+            <h2 className="text-xl font-bold text-foreground">
+              {application.name}
+            </h2>
+            <p className="text-sm text-foreground/60 mt-1">
+              {application.job.title} at {application.job.company}
+            </p>
           </div>
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          >
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -133,11 +158,15 @@ export default function ApplicationStatusModal({
               <StatusBadge status={application.status} />
               {application.statusChangedAt && (
                 <p className="text-xs text-foreground/60">
-                  Updated {new Date(application.statusChangedAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  Updated{" "}
+                  {new Date(application.statusChangedAt).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    },
+                  )}
                 </p>
               )}
             </div>
@@ -145,21 +174,23 @@ export default function ApplicationStatusModal({
 
           {/* Contact Information */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Contact Information</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">
+              Contact Information
+            </h3>
             <div className="space-y-2">
               <a
                 href={`mailto:${application.email}`}
-                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-              >
+                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
                 <Mail className="w-4 h-4 text-foreground/60" />
-                <span className="text-foreground break-all">{application.email}</span>
+                <span className="text-foreground break-all">
+                  {application.email}
+                </span>
                 <ExternalLink className="w-4 h-4 ml-auto text-foreground/40" />
               </a>
               {application.phone && (
                 <a
                   href={`tel:${application.phone}`}
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                >
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
                   <Phone className="w-4 h-4 text-foreground/60" />
                   <span className="text-foreground">{application.phone}</span>
                   <ExternalLink className="w-4 h-4 ml-auto text-foreground/40" />
@@ -170,13 +201,18 @@ export default function ApplicationStatusModal({
 
           {/* Profile Links */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Professional Profiles</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">
+              Professional Profiles
+            </h3>
             <div className="space-y-2">
               {application.experience && (
                 <p className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg text-sm">
-                  <span className="font-semibold text-foreground/60">Experience:</span>
+                  <span className="font-semibold text-foreground/60">
+                    Experience:
+                  </span>
                   <span className="text-foreground">
-                    {EXPERIENCE_OPTIONS[application.experience] || application.experience}
+                    {EXPERIENCE_OPTIONS[application.experience] ||
+                      application.experience}
                   </span>
                 </p>
               )}
@@ -185,11 +221,14 @@ export default function ApplicationStatusModal({
                   href={application.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group"
-                >
-                  <span className="text-sm font-semibold text-foreground/60">LinkedIn</span>
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group">
+                  <span className="text-sm font-semibold text-foreground/60">
+                    LinkedIn
+                  </span>
                   <span className="text-sm text-foreground group-hover:underline truncate">
-                    {application.linkedin.replace("https://", "").replace("www.", "")}
+                    {application.linkedin
+                      .replace("https://", "")
+                      .replace("www.", "")}
                   </span>
                   <ExternalLink className="w-4 h-4 ml-auto text-foreground/40" />
                 </a>
@@ -199,11 +238,14 @@ export default function ApplicationStatusModal({
                   href={application.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group"
-                >
-                  <span className="text-sm font-semibold text-foreground/60">GitHub</span>
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group">
+                  <span className="text-sm font-semibold text-foreground/60">
+                    GitHub
+                  </span>
                   <span className="text-sm text-foreground group-hover:underline truncate">
-                    {application.github.replace("https://", "").replace("www.", "")}
+                    {application.github
+                      .replace("https://", "")
+                      .replace("www.", "")}
                   </span>
                   <ExternalLink className="w-4 h-4 ml-auto text-foreground/40" />
                 </a>
@@ -212,10 +254,11 @@ export default function ApplicationStatusModal({
                 href={application.resumeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group"
-              >
+                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group">
                 <Download className="w-4 h-4 text-foreground/60" />
-                <span className="text-sm text-foreground group-hover:underline">Download Resume</span>
+                <span className="text-sm text-foreground group-hover:underline">
+                  Download Resume
+                </span>
                 <ExternalLink className="w-4 h-4 ml-auto text-foreground/40" />
               </a>
             </div>
@@ -224,16 +267,22 @@ export default function ApplicationStatusModal({
           {/* Cover Letter */}
           {application.coverLetter && (
             <div>
-              <h3 className="text-sm font-semibold text-foreground mb-3">Cover Letter</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">
+                Cover Letter
+              </h3>
               <div className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-lg max-h-40 overflow-y-auto">
-                <p className="text-sm text-foreground whitespace-pre-wrap">{application.coverLetter}</p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">
+                  {application.coverLetter}
+                </p>
               </div>
             </div>
           )}
 
           {/* Recruiter Notes */}
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">Recruiter Notes</label>
+            <label className="block text-sm font-semibold text-foreground mb-2">
+              Recruiter Notes
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -243,13 +292,14 @@ export default function ApplicationStatusModal({
               rows={4}
             />
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-foreground/60">{notes.length}/2000 characters</p>
+              <p className="text-xs text-foreground/60">
+                {notes.length}/2000 characters
+              </p>
               {notes !== (application.notes || "") && (
                 <button
                   onClick={handleNotesUpdate}
                   disabled={loading}
-                  className="px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
-                >
+                  className="px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50">
                   {loading ? "Saving..." : "Save Notes"}
                 </button>
               )}
@@ -258,7 +308,9 @@ export default function ApplicationStatusModal({
 
           {/* Status Actions */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Change Status</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">
+              Change Status
+            </h3>
             <div className="grid grid-cols-2 gap-2">
               {VALID_STATUSES.map((status) => (
                 <button
@@ -269,12 +321,13 @@ export default function ApplicationStatusModal({
                     status === application.status
                       ? "bg-primary/20 text-primary"
                       : "bg-gray-100 dark:bg-gray-800 text-foreground hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
-                >
+                  }`}>
                   {loading && status === application.status ? (
                     <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
                   ) : null}
-                  {status === "NEW" ? "New" : status.charAt(0) + status.slice(1).toLowerCase()}
+                  {status === "NEW"
+                    ? "New"
+                    : status.charAt(0) + status.slice(1).toLowerCase()}
                 </button>
               ))}
             </div>
