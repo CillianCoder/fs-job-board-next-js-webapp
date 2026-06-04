@@ -2,9 +2,6 @@
 
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
-import type { Prisma } from "@prisma/client";
-import { isApplicationStatus } from "@/lib/application-status";
 
 export type ApplicationState = {
   success: boolean;
@@ -12,19 +9,7 @@ export type ApplicationState = {
   message?: string;
 };
 
-async function getRecruiterEmployerId() {
-  const session = await getSession();
-  if (!session || session.role !== "EMPLOYER") {
-    return null;
-  }
-
-  const recruiter = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: { employer: { select: { id: true } } }
-  });
-
-  return recruiter?.employer?.id ?? null;
-}
+const VALID_STATUSES = ["NEW", "REVIEWING", "SHORTLISTED", "APPROVED", "REJECTED"];
 
 /**
  * Update application status with validation
@@ -34,13 +19,13 @@ export async function updateApplicationStatus(
   newStatus: string,
   notes?: string
 ): Promise<ApplicationState> {
-  const employerId = await getRecruiterEmployerId();
-  if (!employerId) {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
     return { success: false, error: "Unauthorized access." };
   }
 
   // Validate status
-  if (!isApplicationStatus(newStatus)) {
+  if (!VALID_STATUSES.includes(newStatus)) {
     return { success: false, error: "Invalid status." };
   }
 
@@ -61,7 +46,7 @@ export async function updateApplicationStatus(
     }
 
     // Verify recruiter owns this job
-    if (application.job.employerId !== employerId) {
+    if (application.job.employerId !== session.userId) {
       return { success: false, error: "Unauthorized access." };
     }
 
@@ -74,10 +59,6 @@ export async function updateApplicationStatus(
         notes: notes || application.notes
       }
     });
-
-    revalidatePath("/recruiter-dashboard");
-    revalidatePath("/recruiter-dashboard/manage-applications");
-    revalidatePath("/candidate-dashboard");
 
     return { success: true, message: `Application status updated to ${newStatus}.` };
   } catch (err) {
@@ -93,12 +74,12 @@ export async function bulkUpdateApplicationStatus(
   applicationIds: string[],
   newStatus: string
 ): Promise<ApplicationState> {
-  const employerId = await getRecruiterEmployerId();
-  if (!employerId) {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
     return { success: false, error: "Unauthorized access." };
   }
 
-  if (!isApplicationStatus(newStatus)) {
+  if (!VALID_STATUSES.includes(newStatus)) {
     return { success: false, error: "Invalid status." };
   }
 
@@ -118,7 +99,7 @@ export async function bulkUpdateApplicationStatus(
     }
 
     // Verify all applications belong to recruiter's jobs
-    const unauthorized = applications.some(app => app.job.employerId !== employerId);
+    const unauthorized = applications.some(app => app.job.employerId !== session.userId);
     if (unauthorized) {
       return { success: false, error: "Unauthorized access to some applications." };
     }
@@ -131,10 +112,6 @@ export async function bulkUpdateApplicationStatus(
         statusChangedAt: new Date()
       }
     });
-
-    revalidatePath("/recruiter-dashboard");
-    revalidatePath("/recruiter-dashboard/manage-applications");
-    revalidatePath("/candidate-dashboard");
 
     return {
       success: true,
@@ -153,8 +130,8 @@ export async function updateApplicationNotes(
   applicationId: string,
   notes: string
 ): Promise<ApplicationState> {
-  const employerId = await getRecruiterEmployerId();
-  if (!employerId) {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
     return { success: false, error: "Unauthorized access." };
   }
 
@@ -172,7 +149,7 @@ export async function updateApplicationNotes(
       return { success: false, error: "Application not found." };
     }
 
-    if (application.job.employerId !== employerId) {
+    if (application.job.employerId !== session.userId) {
       return { success: false, error: "Unauthorized access." };
     }
 
@@ -180,10 +157,6 @@ export async function updateApplicationNotes(
       where: { id: applicationId },
       data: { notes: notes || null }
     });
-
-    revalidatePath("/recruiter-dashboard");
-    revalidatePath("/recruiter-dashboard/manage-applications");
-    revalidatePath("/candidate-dashboard");
 
     return { success: true, message: "Notes updated successfully." };
   } catch (err) {
@@ -196,8 +169,8 @@ export async function updateApplicationNotes(
  * Get application with all details
  */
 export async function getApplicationWithJob(applicationId: string) {
-  const employerId = await getRecruiterEmployerId();
-  if (!employerId) {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
     return null;
   }
 
@@ -212,7 +185,7 @@ export async function getApplicationWithJob(applicationId: string) {
     }
 
     // Verify ownership
-    if (application.job.employerId !== employerId) {
+    if (application.job.employerId !== session.userId) {
       return null;
     }
 
@@ -238,20 +211,20 @@ export async function getRecruiterApplications(
   },
   sortBy: "date" | "status" | "name" = "date"
 ) {
-  const employerId = await getRecruiterEmployerId();
-  if (!employerId) {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
     return null;
   }
 
   try {
     // Build filter conditions
-    const where: Prisma.ApplicationWhereInput = {
+    const where: any = {
       job: {
-        employerId
+        employerId: session.userId
       }
     };
 
-    if (filters?.status && isApplicationStatus(filters.status)) {
+    if (filters?.status && VALID_STATUSES.includes(filters.status)) {
       where.status = filters.status;
     }
 
@@ -277,7 +250,7 @@ export async function getRecruiterApplications(
     }
 
     // Determine sort order
-    let orderBy: Prisma.ApplicationOrderByWithRelationInput = { appliedAt: "desc" };
+    let orderBy: any = { appliedAt: "desc" };
     if (sortBy === "status") {
       orderBy = { status: "asc" };
     } else if (sortBy === "name") {
@@ -299,7 +272,7 @@ export async function getRecruiterApplications(
     // Get status counts
     const statusCounts = await prisma.application.groupBy({
       by: ["status"],
-      where: { job: { employerId } },
+      where: { job: { employerId: session.userId } },
       _count: {
         _all: true
       }
@@ -329,14 +302,14 @@ export async function getRecruiterApplications(
  * Get recruiter's jobs for filter dropdown
  */
 export async function getRecruiterJobs() {
-  const employerId = await getRecruiterEmployerId();
-  if (!employerId) {
+  const session = await getSession();
+  if (!session || session.role !== "EMPLOYER") {
     return null;
   }
 
   try {
     const jobs = await prisma.job.findMany({
-      where: { employerId },
+      where: { employerId: session.userId },
       select: { id: true, title: true },
       orderBy: { postedAt: "desc" }
     });

@@ -64,13 +64,13 @@ export default async function ManageApplicationsPage({
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <Suspense fallback={<div>Loading...</div>}>
         <ManageApplicationsClient
-          initialApplications={applicationsData.applications}
+          initialApplications={applicationsData.applications as any}
           total={applicationsData.total}
           page={applicationsData.page}
           pageSize={applicationsData.pageSize}
           totalPages={applicationsData.totalPages}
           statusCounts={applicationsData.statusCounts}
-          jobs={jobsData}
+          jobs={jobsData as any}
         />
       </Suspense>
     </div>
