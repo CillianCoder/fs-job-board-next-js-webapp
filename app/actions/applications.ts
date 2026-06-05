@@ -5,6 +5,10 @@ import { getSession } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { isApplicationStatus } from "@/lib/application-status";
+import {
+  sendInterviewInvitationEmail,
+  formatDeliveryWarning,
+} from "@/lib/email";
 
 export type ApplicationState = {
   success: boolean;
@@ -32,7 +36,9 @@ async function getRecruiterEmployerId() {
 export async function updateApplicationStatus(
   applicationId: string,
   newStatus: string,
-  notes?: string
+  notes?: string,
+  interviewDate?: string,
+  videoLink?: string,
 ): Promise<ApplicationState> {
   const employerId = await getRecruiterEmployerId();
   if (!employerId) {
@@ -49,11 +55,22 @@ export async function updateApplicationStatus(
     return { success: false, error: "Notes cannot exceed 2000 characters." };
   }
 
+  // If approving, require interview date and video link
+  if (newStatus === "APPROVED") {
+    if (!interviewDate || !videoLink) {
+      return {
+        success: false,
+        error:
+          "Interview date and video conference link are required to approve an application.",
+      };
+    }
+  }
+
   try {
     // Get application with job details
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
-      include: { job: true }
+      include: { job: true },
     });
 
     if (!application) {
@@ -71,15 +88,50 @@ export async function updateApplicationStatus(
       data: {
         status: newStatus,
         statusChangedAt: new Date(),
-        notes: notes || application.notes
-      }
+        notes: notes || application.notes,
+      },
     });
+
+    let message = `Application status updated to ${newStatus}.`;
+    if (newStatus === "APPROVED") {
+      const emailResult = await sendInterviewInvitationEmail({
+        email: application.email,
+        name: application.name,
+        jobTitle: application.job.title,
+        company: application.job.company,
+        interviewDate,
+        videoLink,
+        notes,
+      });
+
+      if (!emailResult.success) {
+        console.error(
+          "Interview invitation email failed:",
+          emailResult.error || emailResult.data,
+        );
+        message = `Application approved, but candidate email delivery failed. ${
+          emailResult.error ? String(emailResult.error) : ""
+        }`;
+      } else if (
+        (emailResult as any).mocked ||
+        (emailResult as any).redirectedToTestRecipient ||
+        !(emailResult as any).resendConfigured
+      ) {
+        message = formatDeliveryWarning(
+          application.email,
+          emailResult,
+          "the interview invitation",
+        );
+      } else {
+        message = "Application approved and candidate notified by email.";
+      }
+    }
 
     revalidatePath("/recruiter-dashboard");
     revalidatePath("/recruiter-dashboard/manage-applications");
     revalidatePath("/candidate-dashboard");
 
-    return { success: true, message: `Application status updated to ${newStatus}.` };
+    return { success: true, message };
   } catch (err) {
     console.error("Update Application Status Error:", err);
     return { success: false, error: "Failed to update application status." };
@@ -91,7 +143,7 @@ export async function updateApplicationStatus(
  */
 export async function bulkUpdateApplicationStatus(
   applicationIds: string[],
-  newStatus: string
+  newStatus: string,
 ): Promise<ApplicationState> {
   const employerId = await getRecruiterEmployerId();
   if (!employerId) {
@@ -110,7 +162,7 @@ export async function bulkUpdateApplicationStatus(
     // Get all applications with job details to verify ownership
     const applications = await prisma.application.findMany({
       where: { id: { in: applicationIds } },
-      include: { job: true }
+      include: { job: true },
     });
 
     if (applications.length !== applicationIds.length) {
@@ -118,9 +170,14 @@ export async function bulkUpdateApplicationStatus(
     }
 
     // Verify all applications belong to recruiter's jobs
-    const unauthorized = applications.some((app) => app.job.employerId !== employerId);
+    const unauthorized = applications.some(
+      (app) => app.job.employerId !== employerId,
+    );
     if (unauthorized) {
-      return { success: false, error: "Unauthorized access to some applications." };
+      return {
+        success: false,
+        error: "Unauthorized access to some applications.",
+      };
     }
 
     // Bulk update
@@ -128,9 +185,41 @@ export async function bulkUpdateApplicationStatus(
       where: { id: { in: applicationIds } },
       data: {
         status: newStatus,
-        statusChangedAt: new Date()
-      }
+        statusChangedAt: new Date(),
+      },
     });
+
+    let emailFailures = 0;
+    if (newStatus === "APPROVED") {
+      const toNotify = applications.filter((app) => app.status !== "APPROVED");
+      for (const app of toNotify) {
+        const emailResult = await sendInterviewInvitationEmail({
+          email: app.email,
+          name: app.name,
+          jobTitle: app.job.title,
+          company: app.job.company,
+        });
+        if (!emailResult.success) {
+          emailFailures += 1;
+          console.error(
+            "Bulk interview invitation email failed for:",
+            app.email,
+            emailResult.error || emailResult.data,
+          );
+        } else if (
+          (emailResult as any).mocked ||
+          (emailResult as any).redirectedToTestRecipient ||
+          !(emailResult as any).resendConfigured
+        ) {
+          // Treat redirected/mocked sends as potential delivery issues
+          emailFailures += 1;
+          console.warn(
+            "Bulk interview invitation may have been redirected or mocked for:",
+            app.email,
+          );
+        }
+      }
+    }
 
     revalidatePath("/recruiter-dashboard");
     revalidatePath("/recruiter-dashboard/manage-applications");
@@ -138,7 +227,11 @@ export async function bulkUpdateApplicationStatus(
 
     return {
       success: true,
-      message: `Updated ${applicationIds.length} application(s) to ${newStatus}.`
+      message:
+        `Updated ${applicationIds.length} application(s) to ${newStatus}.` +
+        (emailFailures > 0
+          ? ` ${emailFailures} notification(s) failed to send.`
+          : ""),
     };
   } catch (err) {
     console.error("Bulk Update Applications Error:", err);
@@ -151,7 +244,7 @@ export async function bulkUpdateApplicationStatus(
  */
 export async function updateApplicationNotes(
   applicationId: string,
-  notes: string
+  notes: string,
 ): Promise<ApplicationState> {
   const employerId = await getRecruiterEmployerId();
   if (!employerId) {
@@ -165,7 +258,7 @@ export async function updateApplicationNotes(
   try {
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
-      include: { job: true }
+      include: { job: true },
     });
 
     if (!application) {
@@ -178,7 +271,7 @@ export async function updateApplicationNotes(
 
     await prisma.application.update({
       where: { id: applicationId },
-      data: { notes: notes || null }
+      data: { notes: notes || null },
     });
 
     revalidatePath("/recruiter-dashboard");
@@ -189,6 +282,43 @@ export async function updateApplicationNotes(
   } catch (err) {
     console.error("Update Application Notes Error:", err);
     return { success: false, error: "Failed to update notes." };
+  }
+}
+
+export async function deleteApplication(
+  applicationId: string,
+): Promise<ApplicationState> {
+  const employerId = await getRecruiterEmployerId();
+  if (!employerId) {
+    return { success: false, error: "Unauthorized access." };
+  }
+
+  try {
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: { job: true },
+    });
+
+    if (!application) {
+      return { success: false, error: "Application not found." };
+    }
+
+    if (application.job.employerId !== employerId) {
+      return { success: false, error: "Unauthorized access." };
+    }
+
+    await prisma.application.delete({
+      where: { id: applicationId },
+    });
+
+    revalidatePath("/recruiter-dashboard");
+    revalidatePath("/recruiter-dashboard/manage-applications");
+    revalidatePath("/candidate-dashboard");
+
+    return { success: true, message: "Application deleted successfully." };
+  } catch (err) {
+    console.error("Delete Application Error:", err);
+    return { success: false, error: "Failed to delete application." };
   }
 }
 
@@ -204,7 +334,7 @@ export async function getApplicationWithJob(applicationId: string) {
   try {
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
-      include: { job: true }
+      include: { job: true },
     });
 
     if (!application) {
@@ -236,7 +366,7 @@ export async function getRecruiterApplications(
     dateFrom?: Date;
     dateTo?: Date;
   },
-  sortBy: "date" | "status" | "name" = "date"
+  sortBy: "date" | "status" | "name" = "date",
 ) {
   const employerId = await getRecruiterEmployerId();
   if (!employerId) {
@@ -247,8 +377,8 @@ export async function getRecruiterApplications(
     // Build filter conditions
     const where: Prisma.ApplicationWhereInput = {
       job: {
-        employerId
-      }
+        employerId,
+      },
     };
 
     if (filters?.status && isApplicationStatus(filters.status)) {
@@ -262,7 +392,7 @@ export async function getRecruiterApplications(
     if (filters?.searchQuery) {
       where.OR = [
         { name: { contains: filters.searchQuery, mode: "insensitive" } },
-        { email: { contains: filters.searchQuery, mode: "insensitive" } }
+        { email: { contains: filters.searchQuery, mode: "insensitive" } },
       ];
     }
 
@@ -277,7 +407,9 @@ export async function getRecruiterApplications(
     }
 
     // Determine sort order
-    let orderBy: Prisma.ApplicationOrderByWithRelationInput = { appliedAt: "desc" };
+    let orderBy: Prisma.ApplicationOrderByWithRelationInput = {
+      appliedAt: "desc",
+    };
     if (sortBy === "status") {
       orderBy = { status: "asc" };
     } else if (sortBy === "name") {
@@ -293,7 +425,7 @@ export async function getRecruiterApplications(
       include: { job: true },
       orderBy,
       skip: (page - 1) * pageSize,
-      take: pageSize
+      take: pageSize,
     });
 
     // Get status counts
@@ -301,8 +433,8 @@ export async function getRecruiterApplications(
       by: ["status"],
       where: { job: { employerId } },
       _count: {
-        _all: true
-      }
+        _all: true,
+      },
     });
 
     return {
@@ -316,8 +448,8 @@ export async function getRecruiterApplications(
           acc[sc.status] = sc._count._all;
           return acc;
         },
-        {} as Record<string, number>
-      )
+        {} as Record<string, number>,
+      ),
     };
   } catch (err) {
     console.error("Get Recruiter Applications Error:", err);
@@ -338,7 +470,7 @@ export async function getRecruiterJobs() {
     const jobs = await prisma.job.findMany({
       where: { employerId },
       select: { id: true, title: true },
-      orderBy: { postedAt: "desc" }
+      orderBy: { postedAt: "desc" },
     });
 
     return jobs;

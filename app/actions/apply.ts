@@ -56,8 +56,17 @@ function validateFields(data: {
   hasExistingResume: boolean;
 }): FieldErrors {
   const errors: FieldErrors = {};
-  const { name, email, phone, linkedin, github, experience, resumeFile, coverLetter, hasExistingResume } =
-    data;
+  const {
+    name,
+    email,
+    phone,
+    linkedin,
+    github,
+    experience,
+    resumeFile,
+    coverLetter,
+    hasExistingResume,
+  } = data;
 
   // Full Name
   const trimmedName = name.trim();
@@ -127,7 +136,7 @@ function validateFields(data: {
 
 export async function applyToJob(
   _prevState: ApplyState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ApplyState> {
   const session = await getSession();
   if (!session || session.role !== "CANDIDATE") {
@@ -140,6 +149,7 @@ export async function applyToJob(
   // Extract raw values
   const name = (formData.get("name") as string) ?? "";
   const email = (formData.get("email") as string) ?? "";
+  const trimmedEmail = email.toLowerCase().trim();
   const phone = (formData.get("phone") as string) ?? "";
   const linkedin = (formData.get("linkedin") as string) ?? "";
   const github = (formData.get("github") as string) ?? "";
@@ -168,6 +178,20 @@ export async function applyToJob(
     return { success: false, errors };
   }
 
+  const existingApplication = await prisma.application.findFirst({
+    where: {
+      jobId,
+      email: trimmedEmail,
+    },
+  });
+
+  if (existingApplication) {
+    return {
+      success: false,
+      globalError: "You have already applied to this job.",
+    };
+  }
+
   try {
     let resumeUrl = existingResumeUrl;
 
@@ -175,15 +199,20 @@ export async function applyToJob(
     if (resumeFile && resumeFile.size > 0) {
       const bytes = await resumeFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "resumes");
+
+      const uploadDir = path.join(
+        process.cwd(),
+        "public",
+        "uploads",
+        "resumes",
+      );
       await fs.mkdir(uploadDir, { recursive: true });
-      
-      const uniqueSuffix = crypto.randomBytes(8).toString('hex');
+
+      const uniqueSuffix = crypto.randomBytes(8).toString("hex");
       const ext = path.extname(resumeFile.name) || ".pdf";
       const fileName = `${Date.now()}-${uniqueSuffix}${ext}`;
       const filePath = path.join(uploadDir, fileName);
-      
+
       // Save file locally
       await fs.writeFile(filePath, buffer);
       resumeUrl = `/uploads/resumes/${fileName}`;
@@ -201,17 +230,19 @@ export async function applyToJob(
       data: {
         jobId,
         name,
-        email,
+        email: trimmedEmail,
         phone: phone || null,
         linkedin: linkedin || null,
         github: github || null,
         experience,
         coverLetter: coverLetter || null,
-        resumeUrl
-      }
+        resumeUrl,
+      },
     });
 
-    console.info(`[applyToJob] Application saved to DB — jobId: ${jobId}, applicant: ${email}`);
+    console.info(
+      `[applyToJob] Application saved to DB — jobId: ${jobId}, applicant: ${email}`,
+    );
 
     return { success: true };
   } catch (error) {

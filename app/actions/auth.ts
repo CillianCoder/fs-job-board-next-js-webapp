@@ -1,8 +1,14 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { comparePassword, hashPassword, setSessionCookie, clearSessionCookie, getSession } from "@/lib/auth";
-import { sendResetPasswordEmail } from "@/lib/email";
+import {
+  comparePassword,
+  hashPassword,
+  setSessionCookie,
+  clearSessionCookie,
+  getSession,
+} from "@/lib/auth";
+import { sendResetPasswordEmail, formatDeliveryWarning } from "@/lib/email";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { SignJWT, jwtVerify } from "jose";
@@ -11,7 +17,7 @@ import path from "path";
 import crypto from "crypto";
 
 const RESET_SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'devforge-super-secret-key-change-me-in-production'
+  process.env.JWT_SECRET || "devforge-super-secret-key-change-me-in-production",
 );
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,7 +33,10 @@ export type ActionState = {
 /**
  * Handle Login Server Action
  */
-export async function loginAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function loginAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const email = (formData.get("email") as string) ?? "";
   const password = (formData.get("password") as string) ?? "";
 
@@ -52,8 +61,8 @@ export async function loginAction(prevState: ActionState, formData: FormData): P
       where: { email: email.toLowerCase().trim() },
       include: {
         employer: true,
-        candidate: true
-      }
+        candidate: true,
+      },
     });
 
     if (!user || !user.password) {
@@ -80,7 +89,7 @@ export async function loginAction(prevState: ActionState, formData: FormData): P
       userId: user.id,
       email: user.email,
       role: user.role,
-      setupComplete
+      setupComplete,
     });
 
     // 5. Redirect on success based on role and setup status
@@ -112,7 +121,10 @@ export async function loginAction(prevState: ActionState, formData: FormData): P
 /**
  * Handle Signup Server Action
  */
-export async function signupAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function signupAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const name = (formData.get("name") as string) ?? "";
   const email = (formData.get("email") as string) ?? "";
   const password = (formData.get("password") as string) ?? "";
@@ -148,11 +160,14 @@ export async function signupAction(prevState: ActionState, formData: FormData): 
   try {
     // 2. Unique Email Check
     const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() }
+      where: { email: email.toLowerCase().trim() },
     });
 
     if (existing) {
-      return { success: false, error: "An account with this email already exists." };
+      return {
+        success: false,
+        error: "An account with this email already exists.",
+      };
     }
 
     // 3. Create User
@@ -162,8 +177,8 @@ export async function signupAction(prevState: ActionState, formData: FormData): 
         name: name.trim(),
         email: email.toLowerCase().trim(),
         password: hashedPassword,
-        role: role
-      }
+        role: role,
+      },
     });
 
     // 4. Automatically Log In
@@ -171,7 +186,7 @@ export async function signupAction(prevState: ActionState, formData: FormData): 
       userId: user.id,
       email: user.email,
       role: user.role,
-      setupComplete: false
+      setupComplete: false,
     });
 
     // 5. Redirect to profile setup
@@ -185,7 +200,10 @@ export async function signupAction(prevState: ActionState, formData: FormData): 
       throw err;
     }
     console.error("Signup Error:", err);
-    return { success: false, error: "Could not create account. Please try again." };
+    return {
+      success: false,
+      error: "Could not create account. Please try again.",
+    };
   }
 }
 
@@ -200,7 +218,10 @@ export async function logoutAction() {
 /**
  * Handle Forgot Password Server Action
  */
-export async function forgotPasswordAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function forgotPasswordAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const email = (formData.get("email") as string) ?? "";
 
   if (!email.trim() || !EMAIL_RE.test(email)) {
@@ -209,42 +230,79 @@ export async function forgotPasswordAction(prevState: ActionState, formData: For
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() }
+      where: { email: email.toLowerCase().trim() },
     });
 
-    // To prevent user enumeration, we return success even if the email doesn't exist
-    if (user) {
-      // Generate a short-lived token (1 hour)
-      const token = await new SignJWT({ userId: user.id, email: user.email })
-        .setProtectedHeader({ alg: "HS256" })
-        .setIssuedAt()
-        .setExpirationTime("1h")
-        .sign(RESET_SECRET_KEY);
-
-      await sendResetPasswordEmail(user.email, token);
+    if (!user) {
+      return {
+        success: false,
+        error: "No account was found for this email address.",
+      };
     }
 
-    return {
-      success: true,
-      message: "If an account exists for this email, we have sent password reset instructions."
-    };
+    // Generate a short-lived token (1 hour)
+    const token = await new SignJWT({ userId: user.id, email: user.email })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("1h")
+      .sign(RESET_SECRET_KEY);
+
+    const emailResult = await sendResetPasswordEmail(user.email, token);
+    console.log("[EMAIL RESULT]", {
+      success: emailResult.success,
+      mocked: (emailResult as any).mocked,
+      resendConfigured: (emailResult as any).resendConfigured,
+      redirectedToTestRecipient: (emailResult as any).redirectedToTestRecipient,
+      originalTo: (emailResult as any).originalTo,
+      resetLink: (emailResult as any).resetLink,
+    });
+    if (!emailResult.success) {
+      const errorMessage =
+        typeof emailResult.error === "string"
+          ? emailResult.error
+          : typeof emailResult.data === "string"
+            ? emailResult.data
+            : "Could not send password reset email. Please try again later.";
+      console.error("Forgot Password Email Failure:", errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+
+    // Return appropriate message based on email delivery flags
+    const message = formatDeliveryWarning(
+      user.email,
+      emailResult,
+      "password reset instructions",
+    );
+    return { success: true, message };
   } catch (err) {
     console.error("Forgot Password Error:", err);
-    return { success: false, error: "Could not process request. Please try again." };
+    return {
+      success: false,
+      error: "Could not process request. Please try again.",
+    };
   }
 }
 
 /**
  * Handle Reset Password Server Action
  */
-export async function resetPasswordAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function resetPasswordAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const token = (formData.get("token") as string) ?? "";
   const password = (formData.get("password") as string) ?? "";
   const confirmPassword = (formData.get("confirmPassword") as string) ?? "";
 
   const fieldErrors: Record<string, string> = {};
   if (!token) {
-    return { success: false, error: "Invalid or expired password reset token." };
+    return {
+      success: false,
+      error: "Invalid or expired password reset token.",
+    };
   }
   if (!password) {
     fieldErrors.password = "Password is required.";
@@ -262,7 +320,7 @@ export async function resetPasswordAction(prevState: ActionState, formData: Form
   try {
     // Verify token
     const { payload } = await jwtVerify(token, RESET_SECRET_KEY, {
-      algorithms: ["HS256"]
+      algorithms: ["HS256"],
     });
 
     const userId = payload.userId as string;
@@ -271,20 +329,29 @@ export async function resetPasswordAction(prevState: ActionState, formData: Form
     const hashed = await hashPassword(password);
     await prisma.user.update({
       where: { id: userId },
-      data: { password: hashed }
+      data: { password: hashed },
     });
 
-    return { success: true, message: "Your password has been reset. You can now log in." };
+    return {
+      success: true,
+      message: "Your password has been reset. You can now log in.",
+    };
   } catch (err) {
     console.error("Reset Password Error:", err);
-    return { success: false, error: "Invalid or expired password reset token." };
+    return {
+      success: false,
+      error: "Invalid or expired password reset token.",
+    };
   }
 }
 
 /**
  * Candidate Profile Setup Action
  */
-export async function setupCandidateAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function setupCandidateAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const session = await getSession();
   if (!session || session.role !== "CANDIDATE") {
     return { success: false, error: "Unauthorized access." };
@@ -321,27 +388,40 @@ export async function setupCandidateAction(prevState: ActionState, formData: For
     // Handle resume file if uploaded
     if (resumeFile && resumeFile.size > 0) {
       if (resumeFile.size > 5 * 1024 * 1024) {
-        return { success: false, fieldErrors: { resume: "File size must be 5 MB or less." } };
+        return {
+          success: false,
+          fieldErrors: { resume: "File size must be 5 MB or less." },
+        };
       }
-      if (![
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ].includes(resumeFile.type)) {
-        return { success: false, fieldErrors: { resume: "Only PDF, DOC, or DOCX files are accepted." } };
+      if (
+        ![
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ].includes(resumeFile.type)
+      ) {
+        return {
+          success: false,
+          fieldErrors: { resume: "Only PDF, DOC, or DOCX files are accepted." },
+        };
       }
 
       const bytes = await resumeFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "resumes");
+
+      const uploadDir = path.join(
+        process.cwd(),
+        "public",
+        "uploads",
+        "resumes",
+      );
       await fs.mkdir(uploadDir, { recursive: true });
-      
-      const uniqueSuffix = crypto.randomBytes(8).toString('hex');
+
+      const uniqueSuffix = crypto.randomBytes(8).toString("hex");
       const ext = path.extname(resumeFile.name) || ".pdf";
       const fileName = `${Date.now()}-${uniqueSuffix}${ext}`;
       const filePath = path.join(uploadDir, fileName);
-      
+
       await fs.writeFile(filePath, buffer);
       resumeUrl = `/uploads/resumes/${fileName}`;
     }
@@ -356,7 +436,7 @@ export async function setupCandidateAction(prevState: ActionState, formData: For
         github: github.trim() || null,
         experience,
         coverLetter: coverLetter.trim() || null,
-        ...(resumeUrl ? { resumeUrl } : {})
+        ...(resumeUrl ? { resumeUrl } : {}),
       },
       create: {
         userId: session.userId,
@@ -366,20 +446,20 @@ export async function setupCandidateAction(prevState: ActionState, formData: For
         github: github.trim() || null,
         experience,
         coverLetter: coverLetter.trim() || null,
-        resumeUrl: resumeUrl || ""
-      }
+        resumeUrl: resumeUrl || "",
+      },
     });
 
     // Update User Name
     await prisma.user.update({
       where: { id: session.userId },
-      data: { name: name.trim() }
+      data: { name: name.trim() },
     });
 
     // Update session cookie with setupComplete = true
     await setSessionCookie({
       ...session,
-      setupComplete: true
+      setupComplete: true,
     });
 
     redirect("/candidate-dashboard");
@@ -395,7 +475,10 @@ export async function setupCandidateAction(prevState: ActionState, formData: For
 /**
  * Recruiter Profile Setup Action
  */
-export async function setupRecruiterAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function setupRecruiterAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const session = await getSession();
   if (!session || session.role !== "EMPLOYER") {
     return { success: false, error: "Unauthorized access." };
@@ -408,7 +491,8 @@ export async function setupRecruiterAction(prevState: ActionState, formData: For
 
   // Validation
   const fieldErrors: Record<string, string> = {};
-  if (!companyName.trim()) fieldErrors.companyName = "Company name is required.";
+  if (!companyName.trim())
+    fieldErrors.companyName = "Company name is required.";
   if (website.trim() && !URL_RE.test(website)) {
     fieldErrors.website = "Please enter a valid website URL.";
   }
@@ -425,32 +509,32 @@ export async function setupRecruiterAction(prevState: ActionState, formData: For
         name: companyName.trim(),
         website: website.trim() || null,
         logoUrl: logoUrl.trim() || null,
-        description: description.trim() || null
+        description: description.trim() || null,
       },
       create: {
         userId: session.userId,
         name: companyName.trim(),
         website: website.trim() || null,
         logoUrl: logoUrl.trim() || null,
-        description: description.trim() || null
-      }
+        description: description.trim() || null,
+      },
     });
 
     await prisma.$transaction([
       prisma.user.update({
         where: { id: session.userId },
-        data: { name: `${companyName.trim()} HR` }
+        data: { name: `${companyName.trim()} HR` },
       }),
       prisma.job.updateMany({
         where: { employerId: employer.id },
-        data: { company: companyName.trim() }
-      })
+        data: { company: companyName.trim() },
+      }),
     ]);
 
     // Update session cookie
     await setSessionCookie({
       ...session,
-      setupComplete: true
+      setupComplete: true,
     });
 
     revalidatePath("/jobs");

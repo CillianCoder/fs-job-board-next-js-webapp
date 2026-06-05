@@ -57,7 +57,9 @@ export default function ApplicationsTable({
     return (
       <div className="text-center py-12">
         <p className="text-foreground/60 text-lg">No applications found.</p>
-        <p className="text-foreground/40 mt-1">Try adjusting your filters or check back later.</p>
+        <p className="text-foreground/40 mt-1">
+          Try adjusting your filters or check back later.
+        </p>
       </div>
     );
   }
@@ -72,7 +74,10 @@ export default function ApplicationsTable({
               <th className="px-6 py-4 text-left">
                 <input
                   type="checkbox"
-                  checked={selectedIds.length === applications.length && applications.length > 0}
+                  checked={
+                    selectedIds.length === applications.length &&
+                    applications.length > 0
+                  }
                   onChange={toggleSelectAll}
                   aria-label="Select all applications"
                   className="w-4 h-4 rounded cursor-pointer"
@@ -81,7 +86,9 @@ export default function ApplicationsTable({
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground/80">
                 Applicant
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground/80">Job</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-foreground/80">
+                Job
+              </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-foreground/80">
                 Status
               </th>
@@ -95,7 +102,9 @@ export default function ApplicationsTable({
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {applications.map((application) => (
-              <tr key={application.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <tr
+                key={application.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                 <td className="px-6 py-4">
                   <input
                     type="checkbox"
@@ -107,17 +116,27 @@ export default function ApplicationsTable({
                 </td>
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-semibold text-foreground">{application.name}</p>
-                    <p className="text-sm text-foreground/60">{application.email}</p>
+                    <p className="font-semibold text-foreground">
+                      {application.name}
+                    </p>
+                    <p className="text-sm text-foreground/60">
+                      {application.email}
+                    </p>
                     {application.phone && (
-                      <p className="text-sm text-foreground/60">{application.phone}</p>
+                      <p className="text-sm text-foreground/60">
+                        {application.phone}
+                      </p>
                     )}
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-semibold text-foreground text-sm">{application.job.title}</p>
-                    <p className="text-xs text-foreground/60">{application.job.company}</p>
+                    <p className="font-semibold text-foreground text-sm">
+                      {application.job.title}
+                    </p>
+                    <p className="text-xs text-foreground/60">
+                      {application.job.company}
+                    </p>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -136,16 +155,16 @@ export default function ApplicationsTable({
                       onClick={() => onViewProfile(application)}
                       aria-label={`View profile for ${application.name}`}
                       className="p-2 text-foreground/60 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      title="View Profile"
-                    >
+                      title="View Profile">
                       <Eye className="w-4 h-4" />
                     </button>
                     <a
-                      href={`mailto:${application.email}`}
+                      href={`mailto:${application.email}?subject=${encodeURIComponent(`Follow-up on your application for ${application.job.title}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       aria-label={`Email ${application.email}`}
                       className="p-2 text-foreground/60 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      title="Send Email"
-                    >
+                      title="Send Email">
                       <Mail className="w-4 h-4" />
                     </a>
                     <a
@@ -154,8 +173,7 @@ export default function ApplicationsTable({
                       rel="noopener noreferrer"
                       aria-label={`Download resume for ${application.name}`}
                       className="p-2 text-foreground/60 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      title="Download Resume"
-                    >
+                      title="Download Resume">
                       <Download className="w-4 h-4" />
                     </a>
                   </div>
@@ -179,10 +197,16 @@ export default function ApplicationsTable({
                 className="w-4 h-4 rounded cursor-pointer mt-1"
               />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground">{application.name}</p>
-                <p className="text-sm text-foreground/60 truncate">{application.email}</p>
+                <p className="font-semibold text-foreground">
+                  {application.name}
+                </p>
+                <p className="text-sm text-foreground/60 truncate">
+                  {application.email}
+                </p>
                 {application.phone && (
-                  <p className="text-sm text-foreground/60">{application.phone}</p>
+                  <p className="text-sm text-foreground/60">
+                    {application.phone}
+                  </p>
                 )}
               </div>
             </div>
@@ -190,7 +214,9 @@ export default function ApplicationsTable({
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-foreground/60">Job</p>
-                <p className="font-semibold text-foreground truncate">{application.job.title}</p>
+                <p className="font-semibold text-foreground truncate">
+                  {application.job.title}
+                </p>
               </div>
               <div>
                 <p className="text-foreground/60">Status</p>
@@ -211,22 +237,21 @@ export default function ApplicationsTable({
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
               <button
                 onClick={() => onViewProfile(application)}
-                className="flex-1 px-3 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-lg hover:bg-primary/20 transition-colors"
-              >
+                className="flex-1 px-3 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-lg hover:bg-primary/20 transition-colors">
                 View Profile
               </button>
               <a
-                href={`mailto:${application.email}`}
-                className="p-2 bg-gray-50 dark:bg-gray-800 text-foreground/60 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
+                href={`mailto:${application.email}?subject=${encodeURIComponent(`Follow-up on your application for ${application.job.title}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-gray-50 dark:bg-gray-800 text-foreground/60 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <Mail className="w-4 h-4" />
               </a>
               <a
                 href={application.resumeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 bg-gray-50 dark:bg-gray-800 text-foreground/60 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
+                className="p-2 bg-gray-50 dark:bg-gray-800 text-foreground/60 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <Download className="w-4 h-4" />
               </a>
             </div>

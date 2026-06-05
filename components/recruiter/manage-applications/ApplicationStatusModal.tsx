@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { X, Mail, Phone, ExternalLink, Download, Loader2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import {
+  deleteApplication,
   updateApplicationStatus,
   updateApplicationNotes,
 } from "@/app/actions/applications";
@@ -58,12 +59,17 @@ export default function ApplicationStatusModal({
 }: ApplicationStatusModalProps) {
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState(application?.notes || "");
+  const [interviewDate, setInterviewDate] = useState("");
+  const [videoLink, setVideoLink] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     if (application) {
       setNotes(application.notes || "");
+      setInterviewDate("");
+      setVideoLink("");
       setError("");
       setSuccess("");
       setLoading(false);
@@ -81,6 +87,8 @@ export default function ApplicationStatusModal({
       application.id,
       newStatus,
       notes,
+      interviewDate || undefined,
+      videoLink || undefined,
     );
 
     setLoading(false);
@@ -111,6 +119,30 @@ export default function ApplicationStatusModal({
       }, 1500);
     } else {
       setError(result.error || "Failed to update notes.");
+    }
+  };
+
+  const handleDeleteApplication = async () => {
+    const confirmed = window.confirm(
+      "Delete this application? This action cannot be undone.",
+    );
+    if (!confirmed) return;
+
+    setDeleteLoading(true);
+    setError("");
+    setSuccess("");
+
+    const result = await deleteApplication(application.id);
+
+    setDeleteLoading(false);
+    if (result.success) {
+      setSuccess(result.message || "Application deleted successfully.");
+      setTimeout(() => {
+        onStatusChange();
+        onClose();
+      }, 1000);
+    } else {
+      setError(result.error || "Failed to delete application.");
     }
   };
 
@@ -179,7 +211,9 @@ export default function ApplicationStatusModal({
             </h3>
             <div className="space-y-2">
               <a
-                href={`mailto:${application.email}`}
+                href={`mailto:${application.email}?subject=${encodeURIComponent(`Follow-up on your application for ${application.job.title}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
                 <Mail className="w-4 h-4 text-foreground/60" />
                 <span className="text-foreground break-all">
@@ -306,6 +340,34 @@ export default function ApplicationStatusModal({
             </div>
           </div>
 
+          {/* Interview Details */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-3">
+              Interview Details (optional)
+            </h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="block text-sm font-semibold text-foreground/70">
+                Date & Time
+                <input
+                  type="datetime-local"
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  className="mt-2 w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </label>
+              <label className="block text-sm font-semibold text-foreground/70">
+                Video Conference Link
+                <input
+                  type="url"
+                  value={videoLink}
+                  onChange={(e) => setVideoLink(e.target.value)}
+                  placeholder="https://meet.example.com/..."
+                  className="mt-2 w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </label>
+            </div>
+          </div>
+
           {/* Status Actions */}
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">
@@ -316,7 +378,11 @@ export default function ApplicationStatusModal({
                 <button
                   key={status}
                   onClick={() => handleStatusChange(status)}
-                  disabled={loading || status === application.status}
+                  disabled={
+                    loading ||
+                    status === application.status ||
+                    (status === "APPROVED" && (!interviewDate || !videoLink))
+                  }
                   className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     status === application.status
                       ? "bg-primary/20 text-primary"
@@ -343,6 +409,23 @@ export default function ApplicationStatusModal({
               hour: "2-digit",
               minute: "2-digit",
             })}
+          </div>
+
+          {/* Actions */}
+          <div className="pt-6 flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              onClick={handleDeleteApplication}
+              disabled={deleteLoading}
+              className="w-full sm:w-auto px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {deleteLoading ? "Deleting..." : "Delete Application"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors">
+              Close
+            </button>
           </div>
         </div>
       </div>

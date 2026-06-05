@@ -1,10 +1,19 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getSession, hashPassword, comparePassword, setSessionCookie } from "@/lib/auth";
+import {
+  getSession,
+  hashPassword,
+  comparePassword,
+  setSessionCookie,
+} from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import { isApplicationStatus } from "@/lib/application-status";
+import {
+  sendInterviewInvitationEmail,
+  formatDeliveryWarning,
+} from "@/lib/email";
 
 export type ActionState = {
   success: boolean;
@@ -27,7 +36,8 @@ async function requireAdmin() {
 
 // Generate secure random password
 function generateSecurePassword(length = 12): string {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*()";
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*()";
   let pwd = "";
   const bytes = crypto.randomBytes(length);
   for (let i = 0; i < length; i++) {
@@ -51,7 +61,10 @@ function slugify(text: string): string {
 /**
  * Update user details (name, email, role)
  */
-export async function updateUserAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function updateUserAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   try {
     const adminSession = await requireAdmin();
     const userId = formData.get("userId") as string;
@@ -65,7 +78,8 @@ export async function updateUserAction(prevState: ActionState, formData: FormDat
 
     const fieldErrors: Record<string, string> = {};
     if (!name.trim()) fieldErrors.name = "Name is required.";
-    if (!email.trim() || !EMAIL_RE.test(email)) fieldErrors.email = "Valid email is required.";
+    if (!email.trim() || !EMAIL_RE.test(email))
+      fieldErrors.email = "Valid email is required.";
     if (role !== "ADMIN" && role !== "EMPLOYER" && role !== "CANDIDATE") {
       fieldErrors.role = "Invalid role selected.";
     }
@@ -76,18 +90,24 @@ export async function updateUserAction(prevState: ActionState, formData: FormDat
 
     // Safety check: prevent changing own role
     if (userId === adminSession.userId && role !== "ADMIN") {
-      return { success: false, error: "You cannot change your own Administrator role." };
+      return {
+        success: false,
+        error: "You cannot change your own Administrator role.",
+      };
     }
 
     // Check if email already in use
     const existing = await prisma.user.findFirst({
       where: {
         email: email.toLowerCase().trim(),
-        id: { not: userId }
-      }
+        id: { not: userId },
+      },
     });
     if (existing) {
-      return { success: false, fieldErrors: { email: "Email is already in use by another user." } };
+      return {
+        success: false,
+        fieldErrors: { email: "Email is already in use by another user." },
+      };
     }
 
     // Update user
@@ -96,8 +116,8 @@ export async function updateUserAction(prevState: ActionState, formData: FormDat
       data: {
         name: name.trim(),
         email: email.toLowerCase().trim(),
-        role: role
-      }
+        role: role,
+      },
     });
 
     // Handle cascading profile setup
@@ -107,8 +127,8 @@ export async function updateUserAction(prevState: ActionState, formData: FormDat
         update: { name: name.trim() },
         create: {
           userId,
-          name: name.trim()
-        }
+          name: name.trim(),
+        },
       });
     } else if (role === "EMPLOYER") {
       await prisma.employer.upsert({
@@ -116,8 +136,8 @@ export async function updateUserAction(prevState: ActionState, formData: FormDat
         update: { name: name.trim() },
         create: {
           userId,
-          name: name.trim()
-        }
+          name: name.trim(),
+        },
       });
     }
 
@@ -134,7 +154,9 @@ export async function updateUserAction(prevState: ActionState, formData: FormDat
 /**
  * Reset user password and return plain text generated password
  */
-export async function resetUserPasswordAction(userId: string): Promise<ActionState> {
+export async function resetUserPasswordAction(
+  userId: string,
+): Promise<ActionState> {
   try {
     await requireAdmin();
     if (!userId) {
@@ -142,7 +164,7 @@ export async function resetUserPasswordAction(userId: string): Promise<ActionSta
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -156,8 +178,8 @@ export async function resetUserPasswordAction(userId: string): Promise<ActionSta
       where: { id: userId },
       data: {
         password: hashedPassword,
-        passwordChangedAt: new Date()
-      }
+        passwordChangedAt: new Date(),
+      },
     });
 
     return {
@@ -166,12 +188,15 @@ export async function resetUserPasswordAction(userId: string): Promise<ActionSta
       data: {
         tempPassword,
         name: user.name || "User",
-        email: user.email
-      }
+        email: user.email,
+      },
     };
   } catch (err: any) {
     console.error("resetUserPasswordAction Error:", err);
-    return { success: false, error: err.message || "Failed to reset password." };
+    return {
+      success: false,
+      error: err.message || "Failed to reset password.",
+    };
   }
 }
 
@@ -181,7 +206,9 @@ export async function resetUserPasswordAction(userId: string): Promise<ActionSta
 export async function updateApplicationStatusAdminAction(
   applicationId: string,
   newStatus: string,
-  notes?: string
+  notes?: string,
+  interviewDate?: string,
+  videoLink?: string,
 ): Promise<ActionState> {
   try {
     await requireAdmin();
@@ -194,8 +221,20 @@ export async function updateApplicationStatusAdminAction(
       return { success: false, error: "Notes cannot exceed 2000 characters." };
     }
 
+    // If approving, require interview date and video link
+    if (newStatus === "APPROVED") {
+      if (!interviewDate || !videoLink) {
+        return {
+          success: false,
+          error:
+            "Interview date and video conference link are required to approve an application.",
+        };
+      }
+    }
+
     const app = await prisma.application.findUnique({
-      where: { id: applicationId }
+      where: { id: applicationId },
+      include: { job: true },
     });
 
     if (!app) {
@@ -207,31 +246,111 @@ export async function updateApplicationStatusAdminAction(
       data: {
         status: newStatus,
         statusChangedAt: new Date(),
-        notes: notes || app.notes
+        notes: notes || app.notes,
+      },
+    });
+
+    let message = "Application status updated successfully by Admin.";
+    if (newStatus === "APPROVED") {
+      const emailResult = await sendInterviewInvitationEmail({
+        email: app.email,
+        name: app.name,
+        jobTitle: app.job.title,
+        company: app.job.company,
+        interviewDate,
+        videoLink,
+        notes,
+      });
+      if (!emailResult.success) {
+        console.error(
+          "Admin interview email failed:",
+          emailResult.error || emailResult.data,
+        );
+        message = `Application approved by Admin, but candidate notification failed. ${
+          emailResult.error ? String(emailResult.error) : ""
+        }`;
+      } else if (
+        (emailResult as any).mocked ||
+        (emailResult as any).redirectedToTestRecipient ||
+        !(emailResult as any).resendConfigured
+      ) {
+        message = formatDeliveryWarning(
+          app.email,
+          emailResult,
+          "the interview invitation",
+        );
+      } else {
+        message =
+          "Application approved by Admin and candidate notified by email.";
       }
+    }
+
+    revalidatePath("/admin-dashboard/applications");
+    revalidatePath("/recruiter-dashboard/manage-applications");
+    revalidatePath("/candidate-dashboard");
+    return { success: true, message };
+  } catch (err: any) {
+    console.error("updateApplicationStatusAdminAction Error:", err);
+    return {
+      success: false,
+      error: err.message || "Failed to update application status.",
+    };
+  }
+}
+
+export async function deleteApplicationAdminAction(
+  applicationId: string,
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+
+    if (!applicationId) {
+      return { success: false, error: "Application ID is required." };
+    }
+
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      return { success: false, error: "Application not found." };
+    }
+
+    await prisma.application.delete({
+      where: { id: applicationId },
     });
 
     revalidatePath("/admin-dashboard/applications");
     revalidatePath("/recruiter-dashboard/manage-applications");
     revalidatePath("/candidate-dashboard");
-    return { success: true, message: "Application status updated successfully by Admin." };
+
+    return { success: true, message: "Application deleted successfully." };
   } catch (err: any) {
-    console.error("updateApplicationStatusAdminAction Error:", err);
-    return { success: false, error: err.message || "Failed to update application status." };
+    console.error("deleteApplicationAdminAction Error:", err);
+    return {
+      success: false,
+      error: err.message || "Failed to delete application.",
+    };
   }
 }
 
 /**
  * Create a new Job Category
  */
-export async function createCategoryAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function createCategoryAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   try {
     await requireAdmin();
     const name = (formData.get("name") as string) ?? "";
     const description = (formData.get("description") as string) ?? "";
 
     if (!name.trim()) {
-      return { success: false, fieldErrors: { name: "Category name is required." } };
+      return {
+        success: false,
+        fieldErrors: { name: "Category name is required." },
+      };
     }
 
     const slug = slugify(name);
@@ -241,37 +360,48 @@ export async function createCategoryAction(prevState: ActionState, formData: For
       where: {
         OR: [
           { name: { equals: name.trim(), mode: "insensitive" } },
-          { slug: slug }
-        ]
-      }
+          { slug: slug },
+        ],
+      },
     });
 
     if (existing) {
-      return { success: false, fieldErrors: { name: "Category name or slug already exists." } };
+      return {
+        success: false,
+        fieldErrors: { name: "Category name or slug already exists." },
+      };
     }
 
     await prisma.category.create({
       data: {
         name: name.trim(),
         slug,
-        description: description.trim() || null
-      }
+        description: description.trim() || null,
+      },
     });
 
     revalidatePath("/admin-dashboard/settings");
     revalidatePath("/admin-dashboard");
     revalidatePath("/jobs");
-    return { success: true, message: `Category "${name}" created successfully.` };
+    return {
+      success: true,
+      message: `Category "${name}" created successfully.`,
+    };
   } catch (err: any) {
     console.error("createCategoryAction Error:", err);
-    return { success: false, error: err.message || "Failed to create category." };
+    return {
+      success: false,
+      error: err.message || "Failed to create category.",
+    };
   }
 }
 
 /**
  * Delete a Job Category
  */
-export async function deleteCategoryAction(categoryId: string): Promise<ActionState> {
+export async function deleteCategoryAction(
+  categoryId: string,
+): Promise<ActionState> {
   try {
     await requireAdmin();
     if (!categoryId) {
@@ -280,7 +410,7 @@ export async function deleteCategoryAction(categoryId: string): Promise<ActionSt
 
     // Prisma relation handles setNull automatically since categoryId is optional in Job schema.
     await prisma.category.delete({
-      where: { id: categoryId }
+      where: { id: categoryId },
     });
 
     revalidatePath("/admin-dashboard/settings");
@@ -289,14 +419,20 @@ export async function deleteCategoryAction(categoryId: string): Promise<ActionSt
     return { success: true, message: "Category deleted successfully." };
   } catch (err: any) {
     console.error("deleteCategoryAction Error:", err);
-    return { success: false, error: err.message || "Failed to delete category." };
+    return {
+      success: false,
+      error: err.message || "Failed to delete category.",
+    };
   }
 }
 
 /**
  * Update Admin Profile details (Name & Email)
  */
-export async function updateAdminProfileAction(prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function updateAdminProfileAction(
+  prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   try {
     const adminSession = await requireAdmin();
     const name = (formData.get("name") as string) ?? "";
@@ -304,7 +440,8 @@ export async function updateAdminProfileAction(prevState: ActionState, formData:
 
     const fieldErrors: Record<string, string> = {};
     if (!name.trim()) fieldErrors.name = "Name is required.";
-    if (!email.trim() || !EMAIL_RE.test(email)) fieldErrors.email = "Valid email is required.";
+    if (!email.trim() || !EMAIL_RE.test(email))
+      fieldErrors.email = "Valid email is required.";
 
     if (Object.keys(fieldErrors).length > 0) {
       return { success: false, fieldErrors };
@@ -314,32 +451,38 @@ export async function updateAdminProfileAction(prevState: ActionState, formData:
     const existing = await prisma.user.findFirst({
       where: {
         email: email.toLowerCase().trim(),
-        id: { not: adminSession.userId }
-      }
+        id: { not: adminSession.userId },
+      },
     });
     if (existing) {
-      return { success: false, fieldErrors: { email: "Email is already in use by another account." } };
+      return {
+        success: false,
+        fieldErrors: { email: "Email is already in use by another account." },
+      };
     }
 
     await prisma.user.update({
       where: { id: adminSession.userId },
       data: {
         name: name.trim(),
-        email: email.toLowerCase().trim()
-      }
+        email: email.toLowerCase().trim(),
+      },
     });
 
     // Update the active session cookie
     await setSessionCookie({
       ...adminSession,
-      email: email.toLowerCase().trim()
+      email: email.toLowerCase().trim(),
     });
 
     revalidatePath("/admin-dashboard/settings");
     return { success: true, message: "Profile details updated successfully." };
   } catch (err: any) {
     console.error("updateAdminProfileAction Error:", err);
-    return { success: false, error: err.message || "Failed to update profile." };
+    return {
+      success: false,
+      error: err.message || "Failed to update profile.",
+    };
   }
 }
 
@@ -354,15 +497,18 @@ export async function deleteUserAction(userId: string): Promise<ActionState> {
     }
 
     if (userId === adminSession.userId) {
-      return { success: false, error: "You cannot delete your own Administrator account." };
+      return {
+        success: false,
+        error: "You cannot delete your own Administrator account.",
+      };
     }
 
     const userToDelete = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         employer: true,
-        candidate: true
-      }
+        candidate: true,
+      },
     });
 
     if (!userToDelete) {
@@ -374,24 +520,24 @@ export async function deleteUserAction(userId: string): Promise<ActionState> {
       // 1. If recruiter, delete their jobs (which cascade deletes applications)
       if (userToDelete.employer) {
         await tx.job.deleteMany({
-          where: { employerId: userToDelete.employer.id }
+          where: { employerId: userToDelete.employer.id },
         });
-        
+
         await tx.employer.delete({
-          where: { id: userToDelete.employer.id }
+          where: { id: userToDelete.employer.id },
         });
       }
 
       // 2. If candidate, delete candidate profile
       if (userToDelete.candidate) {
         await tx.candidateProfile.delete({
-          where: { id: userToDelete.candidate.id }
+          where: { id: userToDelete.candidate.id },
         });
       }
 
       // 3. Delete the user
       await tx.user.delete({
-        where: { id: userId }
+        where: { id: userId },
       });
     });
 
@@ -401,10 +547,10 @@ export async function deleteUserAction(userId: string): Promise<ActionState> {
     revalidatePath("/admin-dashboard/candidates");
     revalidatePath("/admin-dashboard/applications");
     revalidatePath("/jobs");
-    
-    return { 
-      success: true, 
-      message: `User "${userToDelete.name || userToDelete.email}" and all associated data have been permanently deleted.` 
+
+    return {
+      success: true,
+      message: `User "${userToDelete.name || userToDelete.email}" and all associated data have been permanently deleted.`,
     };
   } catch (err: any) {
     console.error("deleteUserAction Error:", err);
