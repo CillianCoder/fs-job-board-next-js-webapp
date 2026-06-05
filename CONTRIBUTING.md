@@ -73,6 +73,7 @@ git checkout -b fix/bug-description
 ```
 
 **Branch naming conventions:**
+
 - `feat/` — New feature
 - `fix/` — Bug fix
 - `docs/` — Documentation
@@ -224,6 +225,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
 ### Format
 
 **Type:**
+
 - `feat` — New feature
 - `fix` — Bug fix
 - `docs` — Documentation
@@ -234,6 +236,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
 - `chore` — Maintenance (deps, configs)
 
 **Scope:**
+
 - `auth` — Authentication & sessions
 - `jobs` — Job listings & search
 - `applications` — Application management
@@ -243,6 +246,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
 - `api` — API routes
 
 **Subject:**
+
 - Imperative mood: "add" not "added" or "adds"
 - Don't capitalize first letter
 - No period at end
@@ -320,22 +324,28 @@ git push origin your-feature-name
 
 ```markdown
 ## Description
+
 Brief description of changes.
 
 ## Related Issue
+
 Closes #123
 
 ## Changes
+
 - Change 1
 - Change 2
 
 ## Testing
+
 How to test these changes locally.
 
 ## Screenshots (if applicable)
+
 Add UI changes, error messages, etc.
 
 ## Checklist
+
 - [x] Code follows style guide
 - [x] Tests added/updated
 - [x] Documentation updated
@@ -370,6 +380,7 @@ npm run lint
 ```
 
 **Key rules:**
+
 - 2-space indentation
 - Double quotes for strings
 - Semicolons required
@@ -429,6 +440,7 @@ npm run dev
 ### Example Test Cases
 
 **Job Application:**
+
 - [x] Submit with all required fields
 - [x] Submit with missing fields (shows errors)
 - [x] Upload large resume (> 5MB, shows error)

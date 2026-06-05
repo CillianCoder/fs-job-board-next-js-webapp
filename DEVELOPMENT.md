@@ -74,22 +74,22 @@ npx prisma migrate dev --name add_my_entity
 **`app/actions/my-feature.ts`:**
 
 ```typescript
-'use server';
+"use server";
 
-import prisma from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 export async function myAction(prevState, formData) {
   // Check auth
   const session = await getSession();
   if (!session) {
-    return { success: false, error: 'Unauthorized' };
+    return { success: false, error: "Unauthorized" };
   }
 
   // Validate input
-  const name = formData.get('name') as string;
+  const name = formData.get("name") as string;
   if (!name?.trim()) {
-    return { success: false, error: 'Name is required' };
+    return { success: false, error: "Name is required" };
   }
 
   // Perform action
@@ -97,10 +97,10 @@ export async function myAction(prevState, formData) {
     const result = await prisma.myEntity.create({
       data: { name },
     });
-    return { success: true, message: 'Created successfully', data: result };
+    return { success: true, message: "Created successfully", data: result };
   } catch (error) {
-    console.error('Error:', error);
-    return { success: false, error: 'Failed to create' };
+    console.error("Error:", error);
+    return { success: false, error: "Failed to create" };
   }
 }
 ```
@@ -287,9 +287,9 @@ async function main() {
   // Create users
   const candidate = await prisma.user.create({
     data: {
-      email: 'candidate@test.com',
-      name: 'Test Candidate',
-      role: 'CANDIDATE',
+      email: "candidate@test.com",
+      name: "Test Candidate",
+      role: "CANDIDATE",
       password: hashedPassword,
     },
   });
@@ -297,13 +297,13 @@ async function main() {
   // Create jobs
   const job = await prisma.job.create({
     data: {
-      title: 'Senior React Developer',
-      company: 'TechCorp',
-      location: 'Remote',
-      salary: '150k-200k',
-      type: 'Full-time',
-      tags: ['React', 'TypeScript'],
-      slug: 'senior-react-developer-techcorp-1',
+      title: "Senior React Developer",
+      company: "TechCorp",
+      location: "Remote",
+      salary: "150k-200k",
+      type: "Full-time",
+      tags: ["React", "TypeScript"],
+      slug: "senior-react-developer-techcorp-1",
     },
   });
 }
@@ -340,9 +340,9 @@ npm run dev
 2. **Add debug logs:**
 
 ```typescript
-console.log('DEBUG: about to update user', { userId, email });
-console.error('ERROR: failed to fetch jobs', error);
-console.warn('WARN: large query result', { count: results.length });
+console.log("DEBUG: about to update user", { userId, email });
+console.error("ERROR: failed to fetch jobs", error);
+console.warn("WARN: large query result", { count: results.length });
 ```
 
 3. **Use debugger:**
@@ -368,8 +368,8 @@ node --inspect-brk ./node_modules/next/dist/bin/next dev
 
 ```typescript
 // In Server Action
-console.log('Received formData:', Object.fromEntries(formData));
-console.log('Action response:', { success, error, message });
+console.log("Received formData:", Object.fromEntries(formData));
+console.log("Action response:", { success, error, message });
 ```
 
 3. **Test with Postman/curl:**
@@ -553,13 +553,13 @@ rm -rf node_modules .next && npm install && npm run build
 
 ## Keyboard Shortcuts (DevTools)
 
-| Shortcut | Action |
-|----------|--------|
-| `F12` | Open DevTools |
+| Shortcut               | Action            |
+| ---------------------- | ----------------- |
+| `F12`                  | Open DevTools     |
 | `Cmd/Ctrl + Shift + C` | Element inspector |
-| `Cmd/Ctrl + Shift + J` | Console tab |
-| `Cmd/Ctrl + Shift + K` | Network tab |
-| `Cmd/Ctrl + Shift + I` | Toggle DevTools |
+| `Cmd/Ctrl + Shift + J` | Console tab       |
+| `Cmd/Ctrl + Shift + K` | Network tab       |
+| `Cmd/Ctrl + Shift + I` | Toggle DevTools   |
 
 ---
 
@@ -644,16 +644,16 @@ git push origin feat/my-feature
 
 ### Common Tasks
 
-| Task | Command |
-|------|---------|
-| Add package | `npm install package-name` |
-| Run migrations | `npx prisma migrate dev` |
-| Seed database | `npx prisma db seed` |
-| View database | `npx prisma studio` |
-| Build project | `npm run build` |
-| Start server | `npm run dev` |
-| Check types | `npx tsc --noEmit` |
-| Format code | `npm run lint -- --fix` |
+| Task           | Command                    |
+| -------------- | -------------------------- |
+| Add package    | `npm install package-name` |
+| Run migrations | `npx prisma migrate dev`   |
+| Seed database  | `npx prisma db seed`       |
+| View database  | `npx prisma studio`        |
+| Build project  | `npm run build`            |
+| Start server   | `npm run dev`              |
+| Check types    | `npx tsc --noEmit`         |
+| Format code    | `npm run lint -- --fix`    |
 
 ---
 

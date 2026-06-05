@@ -78,6 +78,7 @@ model User {
 ```
 
 **Roles:**
+
 - `CANDIDATE` — Can browse jobs, apply, manage profile
 - `EMPLOYER` — Can post jobs, manage applications
 - `ADMIN` — Full access to all system functions
@@ -96,13 +97,13 @@ model Job {
   slug         String        @unique  // SEO-friendly URL
   postedAt     DateTime      @default(now())
   description  String?
-  
+
   employerId   String?
   employer     Employer?
-  
+
   categoryId   String?
   category     Category?
-  
+
   applications Application[]
 }
 ```
@@ -114,7 +115,7 @@ model Application {
   id              String   @id @default(cuid())
   jobId           String
   job             Job
-  
+
   name            String
   email           String
   phone           String?
@@ -122,16 +123,17 @@ model Application {
   linkedin        String?
   github          String?
   coverLetter     String?
-  
+
   status          String   @default("NEW")    // NEW, REVIEWING, APPROVED, REJECTED
   statusChangedAt DateTime @default(now()) @updatedAt
   notes           String?       // Recruiter notes (sent to candidate if approved)
-  
+
   appliedAt       DateTime @default(now())
 }
 ```
 
 **Status Flow:**
+
 ```
 NEW → REVIEWING → APPROVED → (send interview email)
       REVIEWING → REJECTED
@@ -224,6 +226,7 @@ These prevent O(n) table scans on common queries.
 ### JWT Session
 
 **Token payload:**
+
 ```json
 {
   "userId": "user_123abc",
@@ -237,12 +240,14 @@ These prevent O(n) table scans on common queries.
 **Storage:** Secure HTTP-only cookie (`__session`)
 
 **Features:**
+
 - ✅ Signed with JWT Secret (in `.env`)
 - ✅ HTTP-only (not accessible from JavaScript)
 - ✅ Configurable expiry (default: 1 hour)
 - ✅ Cleared on logout
 
 **Security:**
+
 - Never store in localStorage (vulnerable to XSS)
 - Always use HTTPS in production
 - Rotate JWT_SECRET periodically
@@ -320,6 +325,7 @@ export async function applyToJobAction(prevState, formData) {
 ```
 
 **Advantages over REST:**
+
 - ✅ No JSON serialization needed
 - ✅ FormData and file uploads work natively
 - ✅ Type-safe (TypeScript)
@@ -379,6 +385,7 @@ RESEND_TEST_RECIPIENT=your-verified-email@gmail.com
 ```
 
 All emails redirect to your verified address. UI shows:
+
 > "We attempted to send... but delivery may be limited. This is a test environment."
 
 #### Production
@@ -391,7 +398,7 @@ The `formatDeliveryWarning()` helper provides honest messaging:
 
 ```typescript
 // If email is mocked or redirected:
-"We attempted to send the interview invitation to {email}, 
+"We attempted to send the interview invitation to {email},
 but delivery may be limited in this test environment."
 
 // If email sent successfully:
@@ -535,23 +542,23 @@ public/
 
 ## Key Technologies
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | React 19 | UI library |
-| | Next.js 16 | Framework, App Router, SSR |
-| | TypeScript 5 | Type safety |
-| | Tailwind CSS v4 | Styling |
-| | Lucide React | Icons |
-| **Backend** | Node.js | Runtime |
-| | Next.js Server Actions | Form mutations |
-| | Next.js API Routes | REST endpoints |
-| **Database** | PostgreSQL 14+ | RDBMS |
-| | Prisma 7.8.0 | ORM, migrations |
-| **Auth** | bcryptjs | Password hashing |
-| | jose | JWT signing |
-| **Email** | Resend | Transactional email |
-| **Dev Tools** | ESLint 9 | Linting |
-| | TypeScript | Type checking |
+| Layer         | Technology             | Purpose                    |
+| ------------- | ---------------------- | -------------------------- |
+| **Frontend**  | React 19               | UI library                 |
+|               | Next.js 16             | Framework, App Router, SSR |
+|               | TypeScript 5           | Type safety                |
+|               | Tailwind CSS v4        | Styling                    |
+|               | Lucide React           | Icons                      |
+| **Backend**   | Node.js                | Runtime                    |
+|               | Next.js Server Actions | Form mutations             |
+|               | Next.js API Routes     | REST endpoints             |
+| **Database**  | PostgreSQL 14+         | RDBMS                      |
+|               | Prisma 7.8.0           | ORM, migrations            |
+| **Auth**      | bcryptjs               | Password hashing           |
+|               | jose                   | JWT signing                |
+| **Email**     | Resend                 | Transactional email        |
+| **Dev Tools** | ESLint 9               | Linting                    |
+|               | TypeScript             | Type checking              |
 
 ---
 
@@ -560,11 +567,13 @@ public/
 ### 1. Database Queries
 
 **✅ Optimized:**
+
 - Prisma relation loading with `include: { ... }`
 - Strategic indexes on frequently queried columns
 - Pagination limits (9 jobs per page)
 
 **❌ Avoid:**
+
 - N+1 queries (load related data eagerly)
 - Unbounded result sets
 
@@ -584,11 +593,12 @@ for (const app of applications) {
 ### 2. Caching
 
 **Response caching:**
+
 - Job listings cached by Vercel's ISR (Incremental Static Regeneration)
 - User dashboard data bypasses cache (always fresh)
 
 ```typescript
-export const revalidate = 3600;  // Cache for 1 hour
+export const revalidate = 3600; // Cache for 1 hour
 ```
 
 ### 3. Images & Assets
@@ -629,7 +639,7 @@ if (recruiter.role !== "EMPLOYER") {
 
 const job = await prisma.job.findUnique({
   where: { id: jobId },
-  include: { employer: true }
+  include: { employer: true },
 });
 
 if (job.employer.userId !== recruiter.userId) {

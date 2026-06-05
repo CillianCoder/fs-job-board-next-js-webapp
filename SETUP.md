@@ -81,6 +81,7 @@ npm install
 ```
 
 This installs:
+
 - **Next.js 16.2.4** — React framework
 - **Prisma 7.8.0** — Database ORM
 - **PostgreSQL adapter** — DB connection
@@ -161,6 +162,7 @@ npx prisma migrate dev --name init
 ```
 
 This will:
+
 1. Create all tables (User, Job, Application, etc.)
 2. Set up relationships and indexes
 3. Generate Prisma Client
@@ -174,6 +176,7 @@ npx prisma db seed
 ```
 
 This creates:
+
 - 3 admin users
 - 5 recruiter companies
 - 20 job listings
@@ -228,6 +231,7 @@ RESEND_TEST_RECIPIENT=your-verified-email@gmail.com
 ```
 
 When `RESEND_TEST_RECIPIENT` is set:
+
 - All user emails are redirected to your verified email
 - Users see: _"We attempted to send... but delivery may be limited"_
 - Good for: Testing email flows in development without actual delivery
@@ -276,6 +280,7 @@ npm run dev
 Runs on [http://localhost:3000](http://localhost:3000)
 
 Features:
+
 - Hot reload on file changes
 - Incremental builds with Turbopack
 - Server Actions enabled
@@ -329,6 +334,7 @@ Then:
 **Cause:** PostgreSQL not running or connection string wrong
 
 **Fix:**
+
 ```bash
 # Start PostgreSQL
 brew services start postgresql    # macOS
@@ -344,6 +350,7 @@ sudo systemctl start postgresql   # Linux
 **Cause:** Database not migrated
 
 **Fix:**
+
 ```bash
 npx prisma migrate dev --name init
 ```
@@ -353,14 +360,16 @@ npx prisma migrate dev --name init
 **Cause:** Email service not set up
 
 **Fix:**
+
 1. Leave it blank for console-only emails (development default), OR
 2. Get key from [resend.com](https://resend.com) and add to `.env`
 
 ### "Unexpected token < in JSON"
 
-**Cause:** Using wrong environment variable (PUBLIC_ prefix missing)
+**Cause:** Using wrong environment variable (PUBLIC\_ prefix missing)
 
 **Fix:**
+
 - Use `NEXT_PUBLIC_SITE_URL` (not `SITE_URL`)
 - Public env vars need `NEXT_PUBLIC_` prefix to be accessible in browser
 
