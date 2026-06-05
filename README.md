@@ -26,6 +26,7 @@ A full-stack job board web application built with **Next.js 16 App Router**, **R
 ## 📋 Table of Contents
 
 - [✨ Features](#-features)
+- [📸 Preview](#-preview)
 - [🏗️ System Architecture](#️-system-architecture)
 - [🛠️ Tech Stack](#️-tech-stack)
 - [🚀 Quick Start](#-quick-start)
