@@ -25,8 +25,9 @@ A full-stack job board web application built with **Next.js 16 App Router**, **R
 
 ## 📋 Table of Contents
 
-- [✨ Features](#-features)
+
 - [📸 Preview](#-preview)
+- [✨ Features](#-features)
 - [🏗️ System Architecture](#️-system-architecture)
 - [🛠️ Tech Stack](#️-tech-stack)
 - [🚀 Quick Start](#-quick-start)
@@ -37,6 +38,29 @@ A full-stack job board web application built with **Next.js 16 App Router**, **R
 - [📝 License](#-license)
 
 ---
+## 📸 Preview
+
+Get a quick look at Devforge's core user experiences, including job discovery, candidate workflows, recruiter tools, and admin management.
+
+### 🏠 Landing Page
+
+![Devforge Home Page](./previews/home.png)
+
+### 💼 Core Application Screens
+
+| Job Listings | Candidate Dashboard |
+|--------------|---------------------|
+| ![](./previews/jobs.png) | ![](./previews/candidatedashboard.png) |
+
+| Recruiter Dashboard | Admin Dashboard |
+|---------------------|-----------------|
+| ![](./previews/recruiterdashboard.png) | ![](./previews/admindashboard.png) |
+
+### 🔐 Authentication
+
+| Login | Sign Up |
+|--------|---------|
+| ![](./previews/login.png) | ![](./previews/signup.png) |
 
 ## ✨ Features
 
